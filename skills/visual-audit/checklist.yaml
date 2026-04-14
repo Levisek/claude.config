@@ -1,0 +1,265 @@
+# Visual Audit — Checklist (Guardian Rules)
+#
+# Struktura inspirovaná GRAL.md: číslované sekce, ID pravidel, neměnná doktrína.
+# Každé pravidlo má: id, nazev, severity, kategorie, kontrola (jak ověřit), fix (co navrhnout).
+# Severity: kritik | upozorneni | info
+# Pravidla se NEMĚNÍ per-projekt. Výjimky jdou do `.visual-audit.ignore`.
+
+meta:
+  verze: "0.1.0"
+  jazyk: cs
+  wcag: "2.2 AA"
+
+# ═══════════════════════════════════════════════════════════════════
+# 1. PŘÍSTUPNOST (WCAG 2.2 AA)
+# ═══════════════════════════════════════════════════════════════════
+sekce_1_a11y:
+  nazev: "Přístupnost"
+  popis: "Minimum pro WCAG 2.2 AA. Axe-core + manuální pravidla."
+  pravidla:
+
+    - id: V001
+      nazev: "Každý obrázek má alt atribut (dekorativní alt='')"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "querySelectorAll('img:not([alt])') — musí být prázdné pole"
+      fix: "Doplnit popisný alt. Dekorativní: alt='' + aria-hidden='true'."
+
+    - id: V002
+      nazev: "Právě jeden <h1> na stránce"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "querySelectorAll('h1').length === 1"
+      fix: "Ponech h1 v hero/main, přebytečné přepni na h2 nebo .sr-only heading."
+
+    - id: V003
+      nazev: "Hierarchie nadpisů bez přeskakování (h1→h2→h3)"
+      severity: upozorneni
+      kategorie: a11y
+      kontrola: "axe-core: heading-order"
+      fix: "Nepřeskakuj úrovně. Pokud chceš velikost, uprav CSS, ne tag."
+
+    - id: V004
+      nazev: "Interaktivní prvky dostupné z klávesnice"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "Tab projde všemi <a>, <button>, [role=button], inputy"
+      fix: "Použij native <button>/<a>. Žádné <div onclick>. Pokud nutné, tabindex='0' + keydown handler."
+
+    - id: V005
+      nazev: "Visible focus state na všech focusable"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "Screenshot focus ringu na náhodných 5 elementech. Outline nesmí být 'none' bez náhrady."
+      fix: "Definuj `:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }`."
+
+    - id: V006
+      nazev: "Skip link na začátku <body>"
+      severity: upozorneni
+      kategorie: a11y
+      kontrola: "První element v <body> je <a href='#main' class='skip-link'>"
+      fix: "Přidat skip link + CSS aby byl viditelný při focusu."
+
+    - id: V007
+      nazev: "Formuláře: každý input má <label>"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "axe-core: label"
+      fix: "Napojit label[for] nebo obalit input. aria-label jen pokud vizuálně label nelze zobrazit."
+
+    - id: V008
+      nazev: "Lang atribut na <html>"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "document.documentElement.lang nesmí být prázdné"
+      fix: "<html lang='cs'> (nebo podle jazyka obsahu)."
+
+    - id: V009
+      nazev: "Touch targety min 44×44 px (mobile)"
+      severity: kritik
+      kategorie: a11y
+      kontrola: "getBoundingClientRect na všech interaktivních — min(width, height) >= 44 v mobile viewportu"
+      fix: "Padding / min-width / min-height. Ikony v kruhu: 44×44 wrapper."
+
+    - id: V010
+      nazev: "Prefers-reduced-motion respektováno"
+      severity: upozorneni
+      kategorie: a11y
+      kontrola: "emulate prefers-reduced-motion: reduce → screenshot animovaných sekcí → nesmí se hýbat"
+      fix: "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }"
+
+# ═══════════════════════════════════════════════════════════════════
+# 2. KONTRAST & BARVY
+# ═══════════════════════════════════════════════════════════════════
+sekce_2_kontrast:
+  nazev: "Kontrast & barvy"
+  pravidla:
+
+    - id: V020
+      nazev: "Text kontrast ≥ 4.5:1 (normal), ≥ 3:1 (large)"
+      severity: kritik
+      kategorie: kontrast
+      kontrola: "axe-core: color-contrast"
+      fix: "Uprav CSS token (ne inline). Large = ≥18px normal / ≥14px bold."
+
+    - id: V021
+      nazev: "UI komponenty (border, ikony) kontrast ≥ 3:1"
+      severity: kritik
+      kategorie: kontrast
+      kontrola: "axe-core: color-contrast-enhanced (rozšíření)"
+      fix: "Tmavší border/icon token, nebo výraznější pozadí."
+
+    - id: V022
+      nazev: "Informace nejsou předávány jen barvou"
+      severity: kritik
+      kategorie: kontrast
+      kontrola: "Greyscale screenshot — kritické stavy (error/success) jdou rozeznat i bez barvy"
+      fix: "Přidat ikonu / tučné písmo / text label vedle barvy."
+
+    - id: V023
+      nazev: "Hover / active / disabled vizuálně odlišné"
+      severity: upozorneni
+      kategorie: kontrast
+      kontrola: "Screenshot 4 stavů tlačítka — musí jít rozlišit pixel-diff"
+      fix: "Min 10% změna jasu / saturace na hover, opacity 0.5 na disabled."
+
+    - id: V024
+      nazev: "Dark mode — žádné invertované stíny / textu"
+      severity: upozorneni
+      kategorie: kontrast
+      kontrola: "prefers-color-scheme: dark → screenshot → vizuální check"
+      fix: "Stíny v dark mode: --shadow-*: 0 0 0 1px rgba(255,255,255,0.08)."
+
+# ═══════════════════════════════════════════════════════════════════
+# 3. RESPONSIVE & LAYOUT
+# ═══════════════════════════════════════════════════════════════════
+sekce_3_responsive:
+  nazev: "Responsive & layout"
+  pravidla:
+
+    - id: V040
+      nazev: "Žádný horizontální scroll na mobilu (375px)"
+      severity: kritik
+      kategorie: responsive
+      kontrola: "document.documentElement.scrollWidth <= 375 při viewportu 375"
+      fix: "overflow-x: hidden na body/html nestačí — najdi přesah (screenshot → highlight přesahujícího elementu)."
+
+    - id: V041
+      nazev: "Žádné horizontální scroll na desktop (1440px)"
+      severity: kritik
+      kategorie: responsive
+      kontrola: "stejné, viewport 1440"
+      fix: "Plné max-width container + padding."
+
+    - id: V042
+      nazev: "Breakpointy pokryty: 375, 768, 1024, 1440"
+      severity: upozorneni
+      kategorie: responsive
+      kontrola: "Screenshot každý breakpoint — žádný layout break"
+      fix: "Definuj @media (min-width: 768px) a (min-width: 1024px). Mobile-first."
+
+    - id: V043
+      nazev: "Touch targety 44×44 stále platí na 375"
+      severity: kritik
+      kategorie: responsive
+      kontrola: "viz V009"
+      fix: "viz V009"
+
+    - id: V044
+      nazev: "Obrázky mají width + height (žádný CLS)"
+      severity: kritik
+      kategorie: responsive
+      kontrola: "querySelectorAll('img:not([width]):not([height])')"
+      fix: "Doplnit width/height atributy. CSS: max-width:100%; height:auto;."
+
+    - id: V045
+      nazev: "Žádný text obříznutý (overflow hidden + ellipsis bez title)"
+      severity: upozorneni
+      kategorie: responsive
+      kontrola: "Screenshot → OCR nadpisů → porovnat s textContent"
+      fix: "Pokud ellipsis nutný, přidat title attribut s plným textem."
+
+    - id: V046
+      nazev: "Fixed header nepřekrývá kotvy"
+      severity: upozorneni
+      kategorie: responsive
+      kontrola: "Scroll na #kotvu → nadpis je viditelný (nepřekrytý headerem)"
+      fix: "[id] { scroll-margin-top: calc(headerHeight + 1rem); }"
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. TYPOGRAFIE & RYTMUS
+# ═══════════════════════════════════════════════════════════════════
+sekce_4_typografie:
+  nazev: "Typografie & rytmus"
+  pravidla:
+
+    - id: V060
+      nazev: "Line-height ≥ 1.5 pro body text"
+      severity: upozorneni
+      kategorie: typo
+      kontrola: "getComputedStyle(body).lineHeight / fontSize >= 1.5"
+      fix: "Nastav --line-height-body: 1.6."
+
+    - id: V061
+      nazev: "Max line length 65–75ch (body text)"
+      severity: upozorneni
+      kategorie: typo
+      kontrola: "Změř šířku <p>, <li> v px / (fontSize * 0.5) — mělo by být v rozsahu"
+      fix: "p, li { max-width: 65ch; }"
+
+    - id: V062
+      nazev: "Typografická škála (žádné náhodné velikosti)"
+      severity: info
+      kategorie: typo
+      kontrola: "Unikátních fontSize hodnot v reálných prvcích < 8"
+      fix: "Definuj tokeny --fs-xs/sm/base/lg/xl/2xl/3xl a používej je."
+
+    - id: V063
+      nazev: "Font-family definován v tokenu, ne inline"
+      severity: info
+      kategorie: typo
+      kontrola: "grep: style=\"font-family v renderovaném HTML"
+      fix: "Použij var(--ff-sans) / var(--ff-serif)."
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. UI STAVY (loading, empty, error, interactive)
+# ═══════════════════════════════════════════════════════════════════
+sekce_5_stavy:
+  nazev: "UI stavy"
+  popis: "Každá feature co načítá data musí mít 4 stavy."
+  pravidla:
+
+    - id: V080
+      nazev: "Loading state existuje a je viditelný min 300ms"
+      severity: upozorneni
+      kategorie: stavy
+      kontrola: "Throttle 3G → screenshot během načítání → spinner/skeleton musí být"
+      fix: "Skeleton UI (preferováno) nebo aria-busy=true + spinner."
+
+    - id: V081
+      nazev: "Empty state pro seznamy (0 položek)"
+      severity: upozorneni
+      kategorie: stavy
+      kontrola: "Mock prázdnou kolekci → screenshot → musí být smysluplný text + CTA"
+      fix: "Nepsat 'Žádná data'. Napsat co to znamená + co s tím (tlačítko/link)."
+
+    - id: V082
+      nazev: "Error state s actionable fix"
+      severity: upozorneni
+      kategorie: stavy
+      kontrola: "Mock API 500 → screenshot → musí být retry button + lidská zpráva"
+      fix: "Technické hlášky jen do console. V UI: 'Něco se nepovedlo. Zkusit znovu.' + button."
+
+    - id: V083
+      nazev: "Form validation inline, ne alert()"
+      severity: kritik
+      kategorie: stavy
+      kontrola: "Submit prázdný formulář → screenshot → chyba u inputu + aria-describedby"
+      fix: "aria-invalid=true + <p id='err-x' role='alert'>zpráva</p> + input aria-describedby=err-x."
+
+    - id: V084
+      nazev: "Žádné console.error / warn v produkci"
+      severity: upozorneni
+      kategorie: stavy
+      kontrola: "page.on('console') → filter error/warning → musí být prázdné po načtení"
+      fix: "Odstraň debug log. Skutečné errory → error boundary / sentry."

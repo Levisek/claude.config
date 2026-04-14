@@ -1,0 +1,163 @@
+# Visual Audit — Electron-specific checklist
+#
+# Aktivuj jen pokud cíl = Electron app (package.json má `electron` v deps + `main` field).
+# Pravidla E001–E099. Severity: kritik | upozorneni | info
+
+meta:
+  verze: "0.1.0"
+  aktivovat_kdyz: "package.json → dependencies.electron || devDependencies.electron"
+
+# ═══════════════════════════════════════════════════════════════════
+# 1. MAIN / RENDERER SECURITY (vizuální projev)
+# ═══════════════════════════════════════════════════════════════════
+sekce_1_security:
+  nazev: "Security → vizuální projev"
+  popis: "Bezpečnostní config se často projeví vizuálně (CSP block = chybějící ikony, missing font = fallback serif, atd.)"
+  pravidla:
+
+    - id: E001
+      nazev: "Žádné CSP violations v console"
+      severity: kritik
+      kategorie: electron-security
+      kontrola: "win.on('console') → filter 'Content Security Policy' → prázdné"
+      fix: "Oprav CSP meta tag nebo session.defaultSession.webRequest.onHeadersReceived."
+
+    - id: E002
+      nazev: "Žádné 'Insecure content' warningy"
+      severity: kritik
+      kategorie: electron-security
+      kontrola: "console filter 'mixed content' / 'insecure'"
+      fix: "Přepni http → https, nebo file://."
+
+    - id: E003
+      nazev: "DevTools zavřené v produkčním buildu"
+      severity: kritik
+      kategorie: electron-security
+      kontrola: "process.env.NODE_ENV === 'production' → win.webContents.isDevToolsOpened() === false"
+      fix: "Podmínit openDevTools jen pro dev režim."
+
+    - id: E004
+      nazev: "Žádné missing assety (404 na file://)"
+      severity: upozorneni
+      kategorie: electron-security
+      kontrola: "session.webRequest.onErrorOccurred → net::ERR_FILE_NOT_FOUND"
+      fix: "Oprav cesty. V Electron: path.join(__dirname, '...'), ne relativní."
+
+# ═══════════════════════════════════════════════════════════════════
+# 2. MULTI-WINDOW & IPC
+# ═══════════════════════════════════════════════════════════════════
+sekce_2_ipc:
+  nazev: "Multi-window & IPC-driven UI"
+  pravidla:
+
+    - id: E020
+      nazev: "Všechna okna mají screenshot (main + modaly + child windows)"
+      severity: info
+      kategorie: electron-ipc
+      kontrola: "app.windows().forEach → screenshot každého"
+      fix: "Zdokumentuj všechna okna v audit reportu."
+
+    - id: E021
+      nazev: "Modální okna mají focus trap"
+      severity: kritik
+      kategorie: electron-ipc
+      kontrola: "Otevři modal → Tab prochází jen modal, neuteče pod něj"
+      fix: "Implementuj focus trap (aria-modal=true + keyboard handler)."
+
+    - id: E022
+      nazev: "IPC call → UI reakce < 100ms"
+      severity: upozorneni
+      kategorie: electron-ipc
+      kontrola: "Klik na IPC-triggered button → screenshot → musí být loading/disabled state do 100ms"
+      fix: "Optimistic UI. Nebo okamžitě disable button + spinner, i když IPC ještě neodpovědělo."
+
+    - id: E023
+      nazev: "Žádné UI freezy při IPC (> 500ms bez reakce)"
+      severity: kritik
+      kategorie: electron-ipc
+      kontrola: "Long-running IPC → UI stále reaguje (jiný button je klikatelný)"
+      fix: "Přesun těžké práce do utility process / worker. Nikdy synchronní IPC."
+
+# ═══════════════════════════════════════════════════════════════════
+# 3. NATIVE CHROME (titlebar, menu, tray)
+# ═══════════════════════════════════════════════════════════════════
+sekce_3_native:
+  nazev: "Native chrome"
+  pravidla:
+
+    - id: E040
+      nazev: "Titlebar konzistentní (frameless: custom titlebar matchuje OS, ne frameless: OS native)"
+      severity: upozorneni
+      kategorie: electron-native
+      kontrola: "Screenshot titlebar na Win/Mac/Linux (jaký OS runnerem) → vizuální konzistence"
+      fix: "Pokud frameless, -webkit-app-region: drag na header + explicitní close/min/max buttony."
+
+    - id: E041
+      nazev: "Draggable regions nepřekrývají interaktivní prvky"
+      severity: kritik
+      kategorie: electron-native
+      kontrola: "Kliknutelné elementy v headeru mají -webkit-app-region: no-drag"
+      fix: ".titlebar-button { -webkit-app-region: no-drag; }"
+
+    - id: E042
+      nazev: "Menu (native menu bar) funguje a je lokalizované"
+      severity: upozorneni
+      kategorie: electron-native
+      kontrola: "Menu.getApplicationMenu() → labels v jazyku app"
+      fix: "Menu.buildFromTemplate s i18n stringy."
+
+    - id: E043
+      nazev: "Context menu (pravé tlačítko) — buď povolené konzistentně, nebo úplně zakázané"
+      severity: info
+      kategorie: electron-native
+      kontrola: "Pravý klik na text input / button / plochu → konzistentní chování"
+      fix: "Preventoval default ve všech oknech stejně, nebo implementuj custom context menu všude."
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. ZOOM & DPI
+# ═══════════════════════════════════════════════════════════════════
+sekce_4_zoom:
+  nazev: "Zoom & High-DPI"
+  pravidla:
+
+    - id: E060
+      nazev: "Zoom 100/125/150% — žádný layout break"
+      severity: upozorneni
+      kategorie: electron-zoom
+      kontrola: "win.webContents.setZoomFactor(1.0/1.25/1.5) → screenshot → porovnat"
+      fix: "Používej rem/em, ne px pro fontSize. Flexbox/grid pro layout."
+
+    - id: E061
+      nazev: "High-DPI assety (@2x / SVG)"
+      severity: upozorneni
+      kategorie: electron-zoom
+      kontrola: "win.setContentSize na retina dpi → screenshot → ikony ostré"
+      fix: "SVG ikony (preferováno) nebo @2x PNG srcset."
+
+    - id: E062
+      nazev: "Ctrl+0 resetuje zoom"
+      severity: info
+      kategorie: electron-zoom
+      kontrola: "Emit Ctrl+0 → zoomFactor === 1.0"
+      fix: "globalShortcut.register('CommandOrControl+0', () => win.webContents.setZoomFactor(1))."
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. OS THEME SYNC
+# ═══════════════════════════════════════════════════════════════════
+sekce_5_theme:
+  nazev: "OS theme sync"
+  pravidla:
+
+    - id: E080
+      nazev: "App respektuje nativeTheme (follow system)"
+      severity: upozorneni
+      kategorie: electron-theme
+      kontrola: "nativeTheme.themeSource = 'light'/'dark' za běhu → screenshot před/po → viditelná změna"
+      fix: "prefers-color-scheme v CSS + nativeTheme.on('updated') v main."
+
+    - id: E081
+      nazev: "Změna tématu nevyžaduje restart"
+      severity: upozorneni
+      kategorie: electron-theme
+      kontrola: "viz E080 — musí se změnit okamžitě, ne až po reload"
+      fix: "CSS variables + prefers-color-scheme místo hardcoded barev."

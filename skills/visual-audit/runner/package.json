@@ -1,0 +1,15 @@
+{
+  "name": "visual-audit-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Runner pro /visual-audit — Playwright + axe-core + custom checks",
+  "main": "run.mjs",
+  "scripts": {
+    "run": "node run.mjs"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "playwright": "^1.59.1"
+  }
+}

@@ -39,6 +39,12 @@ plugins/
 skills/trailofbits/
 
 # ================================================================
+# Visual-audit runner — node_modules, install lokálně přes npm i
+# ================================================================
+skills/visual-audit/runner/node_modules/
+skills/visual-audit/runner/package-lock.json
+
+# ================================================================
 # Systémové
 # ================================================================
 .DS_Store
