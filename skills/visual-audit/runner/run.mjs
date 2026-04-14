@@ -300,28 +300,35 @@ function detectRunningInstance(appPath) {
   }
 }
 
-// Graceful shutdown: zavři renderery → SIGTERM → wait 3s → SIGKILL fallback.
+// Graceful shutdown: window.close() v rendereru → window-all-closed → app.quit() → SIGTERM/SIGKILL jen jako fallback.
 async function gracefulShutdown(browser, child, pages) {
-  // 1. Zavři všechny renderery
+  // 1. Pošli window.close() do každého rendereru — Electron to přetaví na BrowserWindow close event,
+  //    LevisIDE main process ho zpracuje (s --audit-mode flag to nebude blokováno preventDefault).
   for (const p of pages || []) {
-    try { await p.close(); } catch {}
+    try { await p.evaluate(() => window.close()); } catch {}
   }
+  // 2. Odpojíme CDP klienta (neovlivní samotný Electron)
   try { await browser.close(); } catch {}
 
   if (!child || child.exitCode !== null) return;
 
-  // 2. SIGTERM
-  try { child.kill('SIGTERM'); } catch {}
-
-  // 3. Wait 3s
+  // 3. Dej Electronu čas na graceful shutdown (window-all-closed → app.quit())
   const start = Date.now();
-  while (Date.now() - start < 3000) {
+  while (Date.now() - start < 5000) {
     if (child.exitCode !== null) return;
     await new Promise((r) => setTimeout(r, 100));
   }
 
-  // 4. SIGKILL fallback — jen pokud proces stále běží (řeknout uživateli!)
-  console.warn('⚠  Electron nezavřel po SIGTERM, posílám SIGKILL (proces který audit sám spustil).');
+  // 4. Pokud stále běží: SIGTERM
+  try { child.kill('SIGTERM'); } catch {}
+  const t2 = Date.now();
+  while (Date.now() - t2 < 3000) {
+    if (child.exitCode !== null) return;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // 5. SIGKILL fallback (proces, který audit sám spustil)
+  console.warn('⚠  Electron nezavřel po window.close() + SIGTERM, posílám SIGKILL.');
   try { child.kill('SIGKILL'); } catch {}
 }
 
@@ -384,13 +391,16 @@ async function runElectron(appPath) {
   const userDataDir = path.join(appPath, '.audit', 'profile');
   await fs.mkdir(userDataDir, { recursive: true });
 
-  // ───── Spusť Electron s CDP portem + izolovaný profil ─────
+  // ───── Spusť Electron s CDP portem + izolovaný profil + audit mode flag ─────
+  // --audit-mode signalizuje aplikaci, že může přeskočit confirm-quit dialogy
+  // (aplikace ho detekuje přes process.argv.includes('--audit-mode'))
   const CDP_PORT = 9222 + Math.floor(Math.random() * 1000);
   const args = [
     appPath,
     `--remote-debugging-port=${CDP_PORT}`,
     '--remote-allow-origins=*',
     `--user-data-dir=${userDataDir}`,
+    '--audit-mode',
   ];
   console.log(`   spouštím: electron.exe ${args.join(' ')}`);
   const child = spawn(electronBin, args, { cwd: appPath, stdio: ['ignore', 'pipe', 'pipe'] });
