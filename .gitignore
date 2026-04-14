@@ -29,6 +29,8 @@ cache/
 levis-usage.json
 *.log
 *-usage.json
+.claude/
+session-env/
 
 # ================================================================
 # Plugins & externí skills (instalovat zvlášť)

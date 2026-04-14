@@ -2,6 +2,10 @@
 // PreToolUse (Bash): blokuje katastrofické příkazy.
 // Exit 2 + stderr = block. Exit 0 = allow.
 
+const path = require('path');
+const os = require('os');
+const theme = require(path.join(os.homedir(), '.claude', 'lib', 'theme.js'));
+
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', c => input += c);
@@ -36,7 +40,22 @@ process.stdin.on('end', () => {
 
   for (const { re, why } of patterns) {
     if (re.test(cmd)) {
-      process.stderr.write(`🚫 Zablokováno: ${why}\nPříkaz: ${data.tool_input.command}\nPokud je to vědomě chtěné, napiš to sám ručně nebo řekni Claude ať to obejde.\n`);
+      const g = theme.glyphs();
+      const box = theme.box({
+        title: `${g.shield} BLOKOVÁNO · ${why}`,
+        lines: [
+          `Claude se pokusil spustit destruktivní příkaz.`,
+          ``,
+          `${theme.color('Příkaz:', 'dim')} ${data.tool_input.command}`,
+          ``,
+          `${g.arrow} Pokud to opravdu chceš, spusť to ručně`,
+          `  v samostatném terminálu mimo Claude.`,
+          ``,
+          `${theme.color('Pravidlo:', 'dim')} ~/.claude/hooks/block-destructive.js`,
+        ],
+        color: 'red',
+      });
+      process.stderr.write(box + '\n');
       process.exit(2);
     }
   }

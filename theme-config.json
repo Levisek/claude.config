@@ -1,0 +1,11 @@
+{
+  "theme": "default",
+  "statusLine": {
+    "segments": ["project", "git", "tsc", "context", "cost"],
+    "separator": "default"
+  },
+  "banner": {
+    "showFiglet": true,
+    "showWelcomeTip": true
+  }
+}

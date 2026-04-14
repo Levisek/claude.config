@@ -2,7 +2,8 @@
   "autoUpdatesChannel": "latest",
   "statusLine": {
     "type": "command",
-    "command": "node C:/dev/levis-ide/scripts/statusline-dump.js"
+    "command": "node C:/Users/levingerm/.claude/scripts/statusline.js",
+    "padding": 0
   },
   "hooks": {
     "PreToolUse": [
