@@ -1,0 +1,59 @@
+{
+  "autoUpdatesChannel": "latest",
+  "statusLine": {
+    "type": "command",
+    "command": "node C:/dev/levis-ide/scripts/statusline-dump.js"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/block-destructive.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/block-protected.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/auto-approve-read.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/auto-tsc.js"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/session-context.js"
+          }
+        ]
+      }
+    ]
+  }
+}

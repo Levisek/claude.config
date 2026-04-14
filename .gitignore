@@ -1,0 +1,46 @@
+# ================================================================
+# Citlivé — NIKDY necommitovat
+# ================================================================
+.credentials.json
+*.token
+*.pem
+*.key
+id_rsa*
+
+# ================================================================
+# Session data a historie (obsahuje prompty, výstupy, kontext)
+# ================================================================
+history.jsonl
+sessions/
+projects/
+file-history/
+paste-cache/
+shell-snapshots/
+backups/
+telemetry/
+downloads/
+tasks/
+plans/
+cache/
+
+# ================================================================
+# Lokální stav / usage tracking
+# ================================================================
+levis-usage.json
+*.log
+*-usage.json
+
+# ================================================================
+# Plugins & externí skills (instalovat zvlášť)
+# ================================================================
+plugins/
+skills/trailofbits/
+
+# ================================================================
+# Systémové
+# ================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
