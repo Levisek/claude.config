@@ -281,6 +281,50 @@ async function runWeb(url) {
 // ───────────────────────────────────────────────────────────
 // Běh: Electron
 // ───────────────────────────────────────────────────────────
+// Detekce běžící instance cílové aplikace — neshazovat user session.
+function detectRunningInstance(appPath) {
+  try {
+    if (process.platform === 'win32') {
+      const out = execSync(
+        'wmic process where "name=\'electron.exe\'" get ProcessId,CommandLine /format:csv',
+        { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }
+      ).toString();
+      const norm = appPath.replace(/\//g, '\\').toLowerCase();
+      const lines = out.split(/\r?\n/).filter((l) => l.toLowerCase().includes(norm));
+      return lines.length > 0 ? lines.map((l) => l.trim()) : null;
+    }
+    const out = execSync(`pgrep -fl 'electron.*${appPath}'`, { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString();
+    return out.trim().length > 0 ? out.trim().split('\n') : null;
+  } catch {
+    return null;
+  }
+}
+
+// Graceful shutdown: zavři renderery → SIGTERM → wait 3s → SIGKILL fallback.
+async function gracefulShutdown(browser, child, pages) {
+  // 1. Zavři všechny renderery
+  for (const p of pages || []) {
+    try { await p.close(); } catch {}
+  }
+  try { await browser.close(); } catch {}
+
+  if (!child || child.exitCode !== null) return;
+
+  // 2. SIGTERM
+  try { child.kill('SIGTERM'); } catch {}
+
+  // 3. Wait 3s
+  const start = Date.now();
+  while (Date.now() - start < 3000) {
+    if (child.exitCode !== null) return;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // 4. SIGKILL fallback — jen pokud proces stále běží (řeknout uživateli!)
+  console.warn('⚠  Electron nezavřel po SIGTERM, posílám SIGKILL (proces který audit sám spustil).');
+  try { child.kill('SIGKILL'); } catch {}
+}
+
 async function waitForCDP(port, timeoutMs = 25000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -306,6 +350,16 @@ async function runElectron(appPath) {
   const cspViolations = [];
   const consoleErrors = [];
 
+  // ───── SAFETY: detekce běžící instance ─────
+  const running = detectRunningInstance(appPath);
+  if (running) {
+    throw new Error(
+      `Cílová aplikace ${appPath} už běží (${running.length} proces(y)). ` +
+      `Zastav ji a spusť audit znovu. Audit nikdy nespouští druhou instanci ani neshazuje cizí — ` +
+      `viz incident 2026-04-14 (kill Electronu shodil Chrome).`
+    );
+  }
+
   // Ověř že main existuje
   const pkgPath = path.join(appPath, 'package.json');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
@@ -326,9 +380,18 @@ async function runElectron(appPath) {
     throw new Error(`Electron binary nenalezen: ${electronBin}. Spusť 'npm install' v ${appPath}.`);
   }
 
-  // ───── Spusť Electron s CDP portem (žádný --inspect, takže LevisIDE se nerozbije) ─────
+  // ───── Izolovaný profil v .audit/profile ─────
+  const userDataDir = path.join(appPath, '.audit', 'profile');
+  await fs.mkdir(userDataDir, { recursive: true });
+
+  // ───── Spusť Electron s CDP portem + izolovaný profil ─────
   const CDP_PORT = 9222 + Math.floor(Math.random() * 1000);
-  const args = [appPath, `--remote-debugging-port=${CDP_PORT}`, '--remote-allow-origins=*'];
+  const args = [
+    appPath,
+    `--remote-debugging-port=${CDP_PORT}`,
+    '--remote-allow-origins=*',
+    `--user-data-dir=${userDataDir}`,
+  ];
   console.log(`   spouštím: electron.exe ${args.join(' ')}`);
   const child = spawn(electronBin, args, { cwd: appPath, stdio: ['ignore', 'pipe', 'pipe'] });
 
@@ -349,7 +412,7 @@ async function runElectron(appPath) {
   // Počkej na CDP endpoint
   const cdpOk = await waitForCDP(CDP_PORT, 30000);
   if (!cdpOk) {
-    try { child.kill(); } catch {}
+    await gracefulShutdown(null, child, []);
     throw new Error(`CDP neodpovídá na :${CDP_PORT} do 30s. Aplikace pravděpodobně nestartuje.`);
   }
   console.log(`   CDP ready na portu ${CDP_PORT}`);
@@ -362,7 +425,7 @@ async function runElectron(appPath) {
   const allPages = contexts.flatMap((c) => c.pages());
 
   if (allPages.length === 0) {
-    try { child.kill(); } catch {}
+    await gracefulShutdown(browser, child, []);
     throw new Error('Electron nemá žádné renderer stránky. Okno se pravděpodobně nevytvořilo.');
   }
   const window = allPages[0];
@@ -480,10 +543,8 @@ async function runElectron(appPath) {
     okRules.add('V084');
   }
 
-  try { await browser.close(); } catch {}
-  try { child.kill(); } catch {}
-  // Windows potřebuje chvíli na cleanup child procesu
-  await new Promise((r) => setTimeout(r, 500));
+  // Graceful shutdown — zavři stránky, pošli SIGTERM, SIGKILL jen jako poslední fallback.
+  await gracefulShutdown(browser, child, allPages);
   return { okRules: [...okRules], consoleErrors, cspViolations, windows: allWindows.length };
 }
 
