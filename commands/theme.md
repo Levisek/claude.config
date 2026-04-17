@@ -18,7 +18,7 @@ Pokud argument není zadán nebo je neznámý, ukaž aktuální téma + nápově
 ## Postup
 
 ### 1. Přečti aktuální config
-- Cesta: `C:/Users/levingerm/.claude/theme-config.json`
+- Cesta: `C:/Users/admin/.claude/theme-config.json`
 - Parse JSON → aktuální `theme` hodnota
 
 ### 2. Pokud je argument zadán a validní (default/nerd/plain)

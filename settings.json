@@ -2,7 +2,7 @@
   "autoUpdatesChannel": "latest",
   "statusLine": {
     "type": "command",
-    "command": "node C:/Users/levingerm/.claude/scripts/statusline.js",
+    "command": "node \"C:\\Users\\admin\\.claude\\scripts\\levis-usage-dump.js\"",
     "padding": 0
   },
   "hooks": {
@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/block-destructive.js"
+            "command": "node C:/Users/admin/.claude/hooks/block-destructive.js"
           }
         ]
       },
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/block-protected.js"
+            "command": "node C:/Users/admin/.claude/hooks/block-protected.js"
           }
         ]
       },
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/auto-approve-read.js"
+            "command": "node C:/Users/admin/.claude/hooks/auto-approve-read.js"
           }
         ]
       }
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/auto-tsc.js"
+            "command": "node C:/Users/admin/.claude/hooks/auto-tsc.js"
           }
         ]
       }
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/session-context.js"
+            "command": "node C:/Users/admin/.claude/hooks/session-context.js"
           }
         ]
       }
