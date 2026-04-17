@@ -54,18 +54,15 @@ Git zachoval historii přes `git mv`-style rename detection (6 renames v commitu
 
 ## Skills, které NELZE automatizovat (manuální kroky)
 
-### Superpowers (Jesse Vincent, claude-plugins-official)
+### Superpowers (Jesse Vincent, claude-plugins-official) — ✅ hotovo
 
-Plugin se instaluje přes interaktivní slash command v Claude Code session — nelze spustit z Bash. Spusť v libovolné Claude Code session:
+Doinstalováno přes CLI: `claude plugin install superpowers@claude-plugins-official` (verze 5.0.7, user scope).
 
-```
-/plugin install superpowers@claude-plugins-official
-```
+**Co to přidalo:**
+- Slash commandy: `/superpowers:brainstorm`, `/superpowers:write-plan`, `/superpowers:execute-plan`
+- 14 skills: `brainstorming`, `writing-plans`, `executing-plans`, `test-driven-development`, `systematic-debugging`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `using-git-worktrees`, `finishing-a-development-branch`, `verification-before-completion`, `writing-skills`, `using-superpowers`
 
-Po instalaci:
-1. `/plugin list` — ověř, že je nainstalovaný
-2. Test: `/superpowers:brainstorm` s triviálním zadáním (např. „pojmenuj mi proměnnou")
-3. Zkontroluj v `~/.claude/plugins/` že se tam vytvořilo
+Projeví se po restartu Claude Code session.
 
 ### Trail of Bits — ověření
 
@@ -117,5 +114,5 @@ cp CLAUDE.md ~/.claude/
 - [x] `visual-audit/` má `rules/`, `references/`, `scripts/`, `CHANGELOG.md`
 - [x] Trail of Bits: 4 pluginy v `skills/trailofbits/plugins/`
 - [x] `~/.claude-config/` clone OK, commit vytvořen
-- [ ] **Push na origin** — čeká se na user potvrzení (shared-state action)
-- [ ] Superpowers install — **manuální**, viz výše
+- [x] **Push na origin** — commity `2612752` + `c855458` (+ tento follow-up)
+- [x] Superpowers install — verze 5.0.7 doinstalována přes `claude plugin install` CLI
