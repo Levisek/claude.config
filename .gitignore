@@ -33,6 +33,17 @@ levis-usage.json
 session-env/
 
 # ================================================================
+# Runtime cache (MCP auth, per-machine state)
+# ================================================================
+mcp-*-cache.json
+
+# ================================================================
+# Per-machine backupy (necommitovat — obsahují stroj-specifické cesty)
+# ================================================================
+settings.*-backup.json
+settings.local.json
+
+# ================================================================
 # Plugins & externí skills (instalovat zvlášť)
 # ================================================================
 plugins/

@@ -1,0 +1,3 @@
+{
+  "innerCommand": "node -e \"require(require('os').homedir()+'/.claude/scripts/statusline.js')\""
+}
