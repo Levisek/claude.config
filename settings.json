@@ -1,4 +1,32 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf C:*)",
+      "Bash(format *)",
+      "Bash(mkfs*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -fd*)",
+      "Bash(git branch -D *)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
+      "Write(**/id_rsa*)",
+      "Write(**/.ssh/**)",
+      "Edit(**/.ssh/**)",
+      "Write(**/credentials*)",
+      "Edit(**/credentials*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -60,34 +88,6 @@
     "superpowers@claude-plugins-official": true
   },
   "autoUpdatesChannel": "latest",
-  "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
-  "permissions": {
-    "defaultMode": "bypassPermissions",
-    "deny": [
-      "Bash(rm -rf /*)",
-      "Bash(rm -rf ~)",
-      "Bash(rm -rf ~/*)",
-      "Bash(rm -rf $HOME)",
-      "Bash(rm -rf C:*)",
-      "Bash(format *)",
-      "Bash(mkfs*)",
-      "Bash(git push --force*)",
-      "Bash(git push -f*)",
-      "Bash(git reset --hard *)",
-      "Bash(git clean -fd*)",
-      "Bash(git branch -D *)",
-      "Write(**/.env)",
-      "Write(**/.env.*)",
-      "Edit(**/.env)",
-      "Edit(**/.env.*)",
-      "Write(**/*.pem)",
-      "Write(**/*.key)",
-      "Write(**/id_rsa*)",
-      "Write(**/.ssh/**)",
-      "Edit(**/.ssh/**)",
-      "Write(**/credentials*)",
-      "Edit(**/credentials*)"
-    ]
-  }
+  "skipAutoPermissionPrompt": true
 }
