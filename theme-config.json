@@ -1,7 +1,7 @@
 {
   "theme": "default",
   "statusLine": {
-    "segments": ["project", "git", "tsc", "context", "cost"],
+    "segments": ["project", "git", "tsc", "files", "context", "limits", "cache", "cost", "mcp"],
     "separator": "default"
   },
   "banner": {
