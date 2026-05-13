@@ -1,7 +1,12 @@
 # Globální pravidla pro Claude Code
 
 ## Reasoning effort override
-<reasoning_effort>99</reasoning_effort>
+<reasoning_effort>75</reasoning_effort>
+
+Toto je **floor** — výchozí úroveň. Skill `token-aware` ho může zvednout (99) nebo
+snížit (60) podle úlohy. Na začátku každé netriviální odpovědi vyrenderuj status řádek
+ve formátu `[ IQ:X │ main:opus │ agenti:… ]`. Před plánováním, psaním specs a
+netriviální implementací invokuj skill `token-aware`.
 
 ## Komunikace
 - Mluv česky, neformálně
@@ -28,6 +33,7 @@
 ---
 
 Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
+- **Token-aware effort** (adaptivní reasoning + agent routing + status řádek) → skill `token-aware`
 - **Electron security** (`contextIsolation`, CSP, IPC) → skill `electron-security`
 - **TypeScript strict** (`any` s komentářem) → skill `typescript-strict`
 - **i18n texty** (nehardcoduj) → skill `i18n-texts`
