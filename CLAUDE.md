@@ -51,6 +51,20 @@ default „pro jistotu".
 předává explicitně při dispatchi. Bez něj agent zdědí parent model = opus =
 drahé. Vždy explicitně specifikuj model podle tabulky výše.
 
+## Parallel batch mode (SDD a fan-out)
+
+Pokud plán má **5+ tasků** a sériový běh **nestihne 5h budget**, pouštěj
+3 (max 5) nezávislé tasky **paralelně** v jedné odpovědi. Pipeline per task
+zůstává sériová (implementer → spec → quality).
+
+**Konflikt detection (povinné):** před každým paralelním batchem extrahuj
+target files per task. Dva tasky sdílí soubor = **nepouštět paralelně**, jeden
+musí počkat. Pokud target files nejsou jasné, konzervativně předpokládej kolizi.
+
+**Stop conditions:** kterýkoli implementer vrátí `BLOCKED` / `NEEDS_CONTEXT` →
+přepni zpět na sériový režim, dořeš. Detail viz
+`subagent-driven-development` skill, sekce *Parallel Batch Mode*.
+
 ---
 
 Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
