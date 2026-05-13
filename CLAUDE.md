@@ -30,6 +30,27 @@ netriviální implementací invokuj skill `token-aware`.
 - **Pro testy/audit:** vždy izolovaná instance — vlastní `--user-data-dir`, vlastní port, vlastní profil. Graceful shutdown přes IPC/`app.quit()`, ne SIGKILL.
 - **Platí zejména pro:** Playwright / Puppeteer / Chromium launches, Electron `_electron.launch`, `spawn` s Electron binary, a jakékoli `taskkill`/`kill -9`.
 
+## Subagent budget — pro plánované dispatche (zejména SDD)
+
+Když pouštíš sérii subagentů (`subagent-driven-development`, `executing-plans`,
+nebo vlastní fan-out), drž se tohoto routingu. SDD/superpowers default je moc
+drahý a často nasadí sonnet na úkoly co zvládne haiku.
+
+- **implementer** (mechanický task, 1–2 soubory, jasný spec) → **haiku**
+- **implementer** (multi-file, integrace, refactor) → **sonnet**
+- **spec reviewer** (porovná spec ↔ kód, žádný úsudek) → **haiku**
+- **code quality reviewer** (hledá patterns, bugs, smells) → **sonnet**
+- **final code reviewer** (celá implementace) → **sonnet** (jen pokud rozsáhlé → opus)
+- **main coordinator / orchestrator** (tj. já) → **opus**
+
+**Eskalace:** pokud subagent vrátí `BLOCKED` nebo `NEEDS_CONTEXT`, re-dispatch
+o jednu úroveň výš (haiku → sonnet, sonnet → opus). Nikdy nestřílej opus jako
+default „pro jistotu".
+
+**Předávání Agent tool:** parametr `model: "haiku"` / `"sonnet"` / `"opus"` se
+předává explicitně při dispatchi. Bez něj agent zdědí parent model = opus =
+drahé. Vždy explicitně specifikuj model podle tabulky výše.
+
 ---
 
 Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
