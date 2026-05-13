@@ -80,10 +80,6 @@ function versionFrag(s) {
   const m = s.match(/(\d+[.-]\d+)/);
   return m ? ' ' + m[1].replace('-', '.') : '';
 }
-function stripVersion(s) {
-  if (!s) return '';
-  return String(s).replace(/\s*\d+[.-]\d+.*$/, '').trim();
-}
 
 function projectSegment(proj) {
   const isPlain = theme.activeTheme() === 'plain';
@@ -236,7 +232,7 @@ function limitsSegment(data) {
 function iqSegment(sessionId, mainModel) {
   // Default values pokud žádný snapshot
   let iq = 75;
-  let main = stripVersion(mainModel) || 'opus';
+  let main = (mainModel && mainModel.trim()) || 'opus';
   let plannedAgents = [];
 
   // Pokus o načtení IQ snapshot z token-aware skill
