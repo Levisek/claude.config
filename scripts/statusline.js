@@ -230,41 +230,35 @@ function limitsSegment(data) {
 }
 
 function iqSegment(sessionId, mainModel) {
-  // Default values pokud žádný snapshot
-  let iq = 75;
-  let main = (mainModel && mainModel.trim()) || 'opus';
-  let plannedAgents = [];
-
-  // Pokus o načtení IQ snapshot z token-aware skill
-  try {
-    const snapPath = path.join(os.homedir(), '.claude', 'cache', 'iq-state.json');
-    const all = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
-    const snap = (sessionId && all[sessionId]) || all._latest;
-    if (snap) {
-      if (typeof snap.iq === 'number') iq = snap.iq;
-      if (snap.main) main = snap.main;
-      if (Array.isArray(snap.plannedAgents)) plannedAgents = snap.plannedAgents;
-    }
-  } catch {}
-
   // Načtení reálně běžících agentů
   let running = [];
   try {
     const runPath = path.join(os.homedir(), '.claude', 'cache', 'agents-running.json');
     const all = JSON.parse(fs.readFileSync(runPath, 'utf8'));
     const list = (sessionId && all[sessionId]) || [];
-    // Filtrovat stale (> 30 min)
     const STALE_MS = 30 * 60 * 1000;
     const now = Date.now();
     running = list.filter(a => a && (now - (a.startedAt || 0)) < STALE_MS);
   } catch {}
 
+  // Pokus o načtení agent snapshot z token-aware skill (plánované dispatche)
+  let plannedAgents = [];
+  let main = (mainModel && mainModel.trim()) || 'opus';
+  try {
+    const snapPath = path.join(os.homedir(), '.claude', 'cache', 'iq-state.json');
+    const all = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+    const snap = (sessionId && all[sessionId]) || all._latest;
+    if (snap) {
+      if (snap.main) main = snap.main;
+      if (Array.isArray(snap.plannedAgents)) plannedAgents = snap.plannedAgents;
+    }
+  } catch {}
+
+  // Skrýt celý řádek pokud nic mimo default (žádní live agenti, žádný plán)
+  if (running.length === 0 && plannedAgents.length === 0) return '';
+
   const sep = theme.color(' │ ', 'gray');
-  const iqColor = iq >= 99 ? 'brightMagenta' : iq >= 75 ? 'cyan' : 'gray';
-  const parts = [
-    theme.color('IQ:' + iq, iqColor),
-    'main:' + theme.color(main, 'cyan'),
-  ];
+  const parts = ['main:' + theme.color(main, 'cyan')];
 
   if (running.length > 0) {
     const grouped = {};
@@ -281,8 +275,6 @@ function iqSegment(sessionId, mainModel) {
       .map(a => `${a.count || 1}×${theme.color(a.model, 'yellow')}${a.role ? '(' + a.role + ')' : ''}`)
       .join(', ');
     parts.push('plán: ' + planStr);
-  } else {
-    parts.push('agenti: ' + theme.color('–', 'gray'));
   }
 
   const bracket = theme.color('[', 'gray');
