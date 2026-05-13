@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { inferModel } = require(path.join(os.homedir(), '.claude', 'lib', 'model-resolver.js'));
 
 const CACHE_PATH = path.join(os.homedir(), '.claude', 'cache', 'agents-running.json');
 const STALE_MS = 30 * 60 * 1000;
@@ -107,39 +108,3 @@ function writeCache(all) {
   } catch {}
 }
 
-// Routing: podle subagent_type + description vrať doporučený model.
-// Návratová hodnota null = nedoplnit (necháme agent default).
-function inferModel(ti) {
-  const sub = String(ti.subagent_type || '').toLowerCase();
-  const desc = String(ti.description || '').toLowerCase();
-  const prompt = String(ti.prompt || '').toLowerCase().slice(0, 500);
-  const blob = sub + ' ' + desc + ' ' + prompt;
-
-  // Známé subagent typy
-  if (sub === 'explore') return 'haiku';          // search/grep — mechanic
-  if (sub === 'statusline-setup') return 'haiku';
-  if (sub === 'plan') return 'opus';              // design judgment
-  if (sub === 'general-purpose') {
-    // General-purpose může být cokoli — rozhodni podle popisu
-    if (/review|audit|critique|posu[dz]/.test(blob)) return 'sonnet';
-    if (/implement|napsat|vytvo[řr]it|p[řr]idat|fix|opravit/.test(blob)) {
-      // Implementer — pokud je explicitně mechanic, haiku; jinak sonnet
-      if (/mechanic|trivial|jednoduch|lookup|grep|find|hled|po[čc]ítej|count/.test(blob)) return 'haiku';
-      return 'sonnet';
-    }
-    return 'sonnet'; // default pro general-purpose
-  }
-
-  // SDD role keywords (custom subagent_type nebo description)
-  if (/spec.{0,5}review/.test(blob)) return 'haiku';
-  if (/quality.{0,5}review/.test(blob)) return 'sonnet';
-  if (/code.{0,5}review|final.{0,5}review/.test(blob)) return 'sonnet';
-  if (/implementer|implement/.test(blob)) {
-    if (/mechanic|trivial|jednoduch|1[- ]?2.?soubor/.test(blob)) return 'haiku';
-    return 'sonnet';
-  }
-  if (/architect|design|plan/.test(blob)) return 'opus';
-
-  // Fallback — nedoplňovat, nech agent default
-  return null;
-}
