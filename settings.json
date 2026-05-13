@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('os').homedir()+'/.claude/hooks/block-destructive.js')\""
+            "command": "node C:/Users/admin/.claude/hooks/block-destructive.js"
           }
         ]
       },
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('os').homedir()+'/.claude/hooks/block-protected.js')\""
+            "command": "node C:/Users/admin/.claude/hooks/block-protected.js"
           }
         ]
       },
@@ -52,7 +52,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('os').homedir()+'/.claude/hooks/auto-approve-read.js')\""
+            "command": "node C:/Users/admin/.claude/hooks/auto-approve-read.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/admin/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -63,7 +72,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('os').homedir()+'/.claude/hooks/auto-tsc.js')\""
+            "command": "node C:/Users/admin/.claude/hooks/auto-tsc.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/admin/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -73,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('os').homedir()+'/.claude/hooks/session-context.js')\""
+            "command": "node C:/Users/admin/.claude/hooks/session-context.js"
           }
         ]
       }
@@ -81,13 +99,12 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "node -e \"require(require('os').homedir()+'/.claude/scripts/levis-usage-dump.js')\"",
+    "command": "node \"C:\\Users\\admin\\.claude\\scripts\\levis-usage-dump.js\"",
     "padding": 0
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true
 }

@@ -32,10 +32,11 @@ process.stdin.on('end', () => {
   try { git = gitInfoLite(cwd); } catch {}
 
   const segments = [];
+  let iqLine = '';
 
   for (const s of segmentsConfig) {
     try {
-      if (s === 'project') segments.push(projectSegment(proj, model));
+      if (s === 'project') segments.push(projectSegment(proj));
       else if (s === 'git' && git.inRepo) segments.push(gitSegment(git));
       else if (s === 'tsc' && proj.hasTsconfig) segments.push(tscSegment(sessionId));
       else if (s === 'files') {
@@ -56,11 +57,15 @@ process.stdin.on('end', () => {
       } else if (s === 'mcp') {
         const seg = mcpSegment();
         if (seg) segments.push(seg);
+      } else if (s === 'iq') {
+        iqLine = iqSegment(sessionId, model);
       }
     } catch {}
   }
 
-  process.stdout.write(theme.pipe(segments));
+  let out = theme.pipe(segments);
+  if (iqLine) out += '\n' + iqLine;
+  process.stdout.write(out);
 });
 
 function shortModel(m) {
@@ -75,14 +80,17 @@ function versionFrag(s) {
   const m = s.match(/(\d+[.-]\d+)/);
   return m ? ' ' + m[1].replace('-', '.') : '';
 }
+function stripVersion(s) {
+  if (!s) return '';
+  return String(s).replace(/\s*\d+[.-]\d+.*$/, '').trim();
+}
 
-function projectSegment(proj, model) {
+function projectSegment(proj) {
   const isPlain = theme.activeTheme() === 'plain';
   const diamond = isPlain ? '#' : '◆';
   const head = theme.color(diamond, 'purple') + ' ' + theme.color(proj.name, 'cyan');
   const tail = [];
   if (proj.type && proj.type !== 'none') tail.push(theme.color(proj.type, 'cyan'));
-  if (model) tail.push(theme.color(model, 'cyan'));
   return { text: [head, ...tail].join(' · ') };
 }
 
@@ -196,6 +204,7 @@ function limitsSegment(data) {
 
   let pace = '';
   let paceDelta = 0;
+  let remainingStr = '';
   if (typeof fh.resets_at === 'number') {
     const WINDOW_S = 5 * 3600;
     const remaining = fh.resets_at - (Date.now() / 1000);
@@ -209,6 +218,11 @@ function limitsSegment(data) {
         pace = ` ${arrow}${Math.abs(paceDelta)}%`;
       }
     }
+    if (remaining > 0) {
+      const h = Math.floor(remaining / 3600);
+      const m = Math.floor((remaining % 3600) / 60);
+      remainingStr = ` zbývá ${h}h${String(m).padStart(2, '0')}m`;
+    }
   }
 
   let color;
@@ -216,7 +230,68 @@ function limitsSegment(data) {
   else if (used > 50 || paceDelta > 10) color = 'yellow';
   else color = 'green';
 
-  return { text: `5h ${used}%${pace}`, color };
+  return { text: `5h ${used}%${pace}${remainingStr}`, color };
+}
+
+function iqSegment(sessionId, mainModel) {
+  // Default values pokud žádný snapshot
+  let iq = 75;
+  let main = stripVersion(mainModel) || 'opus';
+  let plannedAgents = [];
+
+  // Pokus o načtení IQ snapshot z token-aware skill
+  try {
+    const snapPath = path.join(os.homedir(), '.claude', 'cache', 'iq-state.json');
+    const all = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+    const snap = (sessionId && all[sessionId]) || all._latest;
+    if (snap) {
+      if (typeof snap.iq === 'number') iq = snap.iq;
+      if (snap.main) main = snap.main;
+      if (Array.isArray(snap.plannedAgents)) plannedAgents = snap.plannedAgents;
+    }
+  } catch {}
+
+  // Načtení reálně běžících agentů
+  let running = [];
+  try {
+    const runPath = path.join(os.homedir(), '.claude', 'cache', 'agents-running.json');
+    const all = JSON.parse(fs.readFileSync(runPath, 'utf8'));
+    const list = (sessionId && all[sessionId]) || [];
+    // Filtrovat stale (> 30 min)
+    const STALE_MS = 30 * 60 * 1000;
+    const now = Date.now();
+    running = list.filter(a => a && (now - (a.startedAt || 0)) < STALE_MS);
+  } catch {}
+
+  const sep = theme.color(' │ ', 'gray');
+  const iqColor = iq >= 99 ? 'brightMagenta' : iq >= 75 ? 'cyan' : 'gray';
+  const parts = [
+    theme.color('IQ:' + iq, iqColor),
+    'main:' + theme.color(main, 'cyan'),
+  ];
+
+  if (running.length > 0) {
+    const grouped = {};
+    for (const a of running) {
+      const key = a.model || 'unknown';
+      grouped[key] = (grouped[key] || 0) + 1;
+    }
+    const liveStr = Object.entries(grouped)
+      .map(([m, n]) => `${n}×${theme.color(m, 'brightGreen')}`)
+      .join(', ');
+    parts.push('live: ' + liveStr);
+  } else if (plannedAgents.length > 0) {
+    const planStr = plannedAgents
+      .map(a => `${a.count || 1}×${theme.color(a.model, 'yellow')}${a.role ? '(' + a.role + ')' : ''}`)
+      .join(', ');
+    parts.push('plán: ' + planStr);
+  } else {
+    parts.push('agenti: ' + theme.color('–', 'gray'));
+  }
+
+  const bracket = theme.color('[', 'gray');
+  const bracketEnd = theme.color(']', 'gray');
+  return bracket + ' ' + parts.join(sep) + ' ' + bracketEnd;
 }
 
 function cacheSegment(data) {

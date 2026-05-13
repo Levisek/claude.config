@@ -37,7 +37,8 @@ Adaptivní řízení reasoning effortu + výběr modelu pro subagenty. Šetří 
 2. **Vyhodnoť strategii agentů** (rubrika níže) → seznam plánovaných dispatches s modely.
 3. **Vyrenderuj status řádek** jako první řádek odpovědi.
 4. **Vlož `<reasoning_effort>X</reasoning_effort>`** tag hned pod status řádek.
-5. **Appendni log** do `~/.claude/logs/effort-decisions.jsonl` jediným Bash voláním.
+5. **Zapiš IQ snapshot** do `~/.claude/cache/iq-state.json` (čte statusLine pro spodní panel).
+6. **Appendni log** do `~/.claude/logs/effort-decisions.jsonl` jediným Bash voláním.
 
 ## Rubrika — effort
 
@@ -70,6 +71,27 @@ Se subagenty (po rozhodnutí, ne až po dispatch):
 ```
 
 Status řádek jde **vždy na první řádek odpovědi**, hned za ním `<reasoning_effort>X</reasoning_effort>`, pak prázdný řádek, pak odpověď.
+
+## IQ snapshot pro statusLine
+
+Status line panel (spodní řádek) má segment `iq` který čte `~/.claude/cache/iq-state.json`. Po každém rozhodnutí zapiš (overwrite) aktuální stav. Bez tohoto kroku zůstane v panelu starý/default `IQ:75 main:opus`.
+
+Formát souboru — mapa per sessionId + `_latest` fallback:
+
+```json
+{
+  "_latest": { "ts": 1715683200000, "iq": 99, "main": "opus", "plannedAgents": [{"model":"sonnet","role":"audit","count":1}] },
+  "<sessionId>": { "ts": 1715683200000, "iq": 99, "main": "opus", "plannedAgents": [] }
+}
+```
+
+Doporučený zápis (jeden Bash call, node inline — atomic merge):
+
+```bash
+mkdir -p ~/.claude/cache && node -e "const fs=require('fs'),p=require('os').homedir()+'/.claude/cache/iq-state.json';let a={};try{a=JSON.parse(fs.readFileSync(p,'utf8'))}catch{};const s={ts:Date.now(),iq:99,main:'opus',plannedAgents:[{model:'sonnet',role:'audit',count:1}]};a._latest=s;a['<sessionId>']=s;fs.writeFileSync(p,JSON.stringify(a));"
+```
+
+Pole `plannedAgents` může být prázdné. Pokud sessionId neznáš (rare), zapiš jen do `_latest`.
 
 ## Logging
 
