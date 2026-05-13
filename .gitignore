@@ -20,7 +20,7 @@ backups/
 telemetry/
 downloads/
 tasks/
-plans/
+/plans/
 cache/
 
 # ================================================================
