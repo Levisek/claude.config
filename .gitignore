@@ -56,6 +56,11 @@ skills/visual-audit/runner/node_modules/
 skills/visual-audit/runner/package-lock.json
 
 # ================================================================
+# token-aware runtime telemetrie
+# ================================================================
+logs/effort-decisions.jsonl
+
+# ================================================================
 # Systémové
 # ================================================================
 .DS_Store
