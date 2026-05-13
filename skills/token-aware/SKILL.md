@@ -34,7 +34,7 @@ budget rozdělí sám).
 2. **Zapiš agent snapshot** do `~/.claude/cache/iq-state.json` — statusLine z
    toho vyrendruje `[ main:opus 4.7 │ plán: 2×haiku, 1×sonnet ]` (zobrazí se
    jen pokud je co ukázat).
-3. **Appendni log** do `~/.claude/logs/effort-decisions.jsonl` jediným Bash
+3. **Appendni log** do `~/.claude/logs/agent-decisions.jsonl` jediným Bash
    voláním — pro pozdější retrospektivu kolik šetříme.
 
 **Nepíšeš** v textu odpovědi žádný `[ IQ:X │ … ]` ani `<reasoning_effort>` tag.
@@ -76,12 +76,12 @@ nezapisuj (panel by stejně nic neukázal).
 ## Logging
 
 Po každém rozhodnutí appendni jeden řádek JSONL do
-`~/.claude/logs/effort-decisions.jsonl`. Pokud složka `logs/` neexistuje, vytvoř ji.
+`~/.claude/logs/agent-decisions.jsonl`. Pokud složka `logs/` neexistuje, vytvoř ji.
 
 Příklad (jeden line, žádný node parsing):
 
 ```bash
-mkdir -p ~/.claude/logs && printf '%s\n' '{"ts":"2026-05-13T15:30:00Z","trigger":"writing-plans","main":"opus 4.7","agents":[{"model":"haiku","role":"explore","count":2}],"user_intent":"naplánuj refactor X"}' >> ~/.claude/logs/effort-decisions.jsonl
+mkdir -p ~/.claude/logs && printf '%s\n' '{"ts":"2026-05-13T15:30:00Z","trigger":"writing-plans","main":"opus 4.7","agents":[{"model":"haiku","role":"explore","count":2}],"user_intent":"naplánuj refactor X"}' >> ~/.claude/logs/agent-decisions.jsonl
 ```
 
 Klíče (povinné): `ts`, `trigger`, `main`, `agents` (array — může být prázdné),

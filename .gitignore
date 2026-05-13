@@ -62,6 +62,7 @@ skills/visual-audit/scripts/.audit/
 # token-aware runtime telemetrie
 # ================================================================
 logs/effort-decisions.jsonl
+logs/agent-decisions.jsonl
 
 # ================================================================
 # Systémové
