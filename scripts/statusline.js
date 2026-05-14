@@ -242,20 +242,24 @@ function iqSegment(sessionId, mainModel) {
   } catch {}
 
   // Pokus o načtení agent snapshot z token-aware skill (plánované dispatche)
+  // _latest fallback expiruje po PLAN_TTL_MS — zabraňuje zobrazení stale plánu z minulé session.
+  const PLAN_TTL_MS = 5 * 60 * 1000;
   let plannedAgents = [];
   let main = (mainModel && mainModel.trim()) || 'opus';
   try {
     const snapPath = path.join(os.homedir(), '.claude', 'cache', 'iq-state.json');
     const all = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
-    const snap = (sessionId && all[sessionId]) || all._latest;
+    let snap = sessionId && all[sessionId];
+    if (!snap && all._latest && (Date.now() - (all._latest.ts || 0)) < PLAN_TTL_MS) {
+      snap = all._latest;
+    }
     if (snap) {
       if (snap.main) main = snap.main;
       if (Array.isArray(snap.plannedAgents)) plannedAgents = snap.plannedAgents;
     }
   } catch {}
 
-  // Skrýt celý řádek pokud nic mimo default (žádní live agenti, žádný plán)
-  if (running.length === 0 && plannedAgents.length === 0) return '';
+  // Vždy ukázat alespoň main:model — řádek se neskrývá, aby user pořád viděl na čem jede.
 
   const sep = theme.color(' │ ', 'gray');
   const parts = ['main:' + theme.color(main, 'cyan')];
