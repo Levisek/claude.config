@@ -18,8 +18,8 @@ try {
 
 // Sanity checks — validator must always produce output describing state.
 if (result.code === 0) {
-  if (!result.stdout.includes('OK')) {
-    console.error('FAIL: exit 0 but no "OK" in stdout');
+  if (!result.stdout.includes('OK') || !result.stdout.includes('6')) {
+    console.error('FAIL: exit 0 but OK/count missing in stdout');
     process.exit(1);
   }
   console.log('PASS: validator reports OK (agents exist and valid)');
