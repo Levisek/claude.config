@@ -53,6 +53,23 @@ default „pro jistotu".
 předává explicitně při dispatchi. Bez něj agent zdědí parent model = opus =
 drahé. Vždy explicitně specifikuj model podle tabulky výše.
 
+## Time calibration
+
+Některé prompty (planning fáze, dotazy na odhad) dostanou auto-injectnutý blok
+„Historical signals" z `cache/duration-stats.json` — agregace skutečných trvání
+agent dispatchů per (repo × subagent_type) za posledních 90 dní.
+
+**Treat injected duration stats as prior evidence. P90 is the realistic upper
+bound. If your gut says „this is simple", check whether the historical P90
+disagrees — it usually does.**
+
+- Sběr: `hooks/log-duration.js` (volaný z `track-agents.js`) → `logs/agent-durations.jsonl`
+- Agregace: `scripts/duration-stats.js` (on-demand + auto rebuild s 30s debounce po každém zápisu)
+- Per-repo postmortem: `/postmortem` → `memory/surprises-<repo>.md` (auto-konzumováno detect-triggers při planning trigger)
+
+Statistiky jsou per-repo. Pokud daný repo nemá ≥3 vzorky, nic se neinjektuje
+(falešná čísla jsou horší než žádná).
+
 ## Parallel batch mode (SDD a fan-out) — DEFAULT
 
 **Toto je default chování pro každý plánovaný dispatch s 3+ tasky.** Není
@@ -76,6 +93,7 @@ degraduj na sériový, batch dokonči bez něj. Detail viz
 
 Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
 - **Token-aware** (routing modelů subagentů + snapshot pro status panel + logging) → skill `token-aware`
+- **Time calibration** (historical durations → P50/P90 prior pro odhady) → sekce výše
 - **Electron security** (`contextIsolation`, CSP, IPC) → skill `electron-security`
 - **TypeScript strict** (`any` s komentářem) → skill `typescript-strict`
 - **i18n texty** (nehardcoduj) → skill `i18n-texts`

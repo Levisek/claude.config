@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { inferModel } = require(path.join(os.homedir(), '.claude', 'lib', 'model-resolver.js'));
+const { recordStart, finalizeDispatch } = require(path.join(os.homedir(), '.claude', 'hooks', 'log-duration.js'));
 
 const CACHE_PATH = path.join(os.homedir(), '.claude', 'cache', 'agents-running.json');
 const STALE_MS = 30 * 60 * 1000;
@@ -53,15 +54,18 @@ process.stdin.on('end', () => {
     const ti = data?.tool_input || {};
     const inferredModel = inferModel(ti);
     const model = (ti.model || inferredModel || 'sonnet').toLowerCase();
-    const role = ti.subagent_type || ti.description || 'task';
+    const cwd = data?.cwd || data?.workspace?.current_dir || process.cwd();
 
-    // Zaznamenat dispatch (s effektivním modelem)
-    list.push({
-      id: toolUseId || `t${now}${Math.floor(Math.random() * 1000)}`,
+    // Enriched record (statusline-kompatibilní + duration tracking metadata)
+    const record = recordStart({
+      sessionId,
+      toolUseId,
+      ti,
+      cwd,
       model,
-      role: String(role).slice(0, 30),
-      startedAt: now,
+      now,
     });
+    list.push(record);
     all[sessionId] = list;
     writeCache(all);
 
@@ -79,11 +83,27 @@ process.stdin.on('end', () => {
     }
     process.exit(0);
   } else if (event === 'PostToolUse') {
+    // Najdi záznam který se chystá smazat — předej do log-duration pro JSONL append
+    let removed = null;
+    let remaining;
     if (toolUseId) {
-      all[sessionId] = list.filter(a => a.id !== toolUseId);
+      removed = list.find(a => a.id === toolUseId) || null;
+      remaining = list.filter(a => a.id !== toolUseId);
     } else {
-      all[sessionId] = list.slice(1);
+      removed = list[0] || null;
+      remaining = list.slice(1);
     }
+    try {
+      if (removed) {
+        finalizeDispatch(removed, data, {
+          sessionId,
+          now,
+          otherRunning: remaining,
+        });
+      }
+    } catch {}
+
+    all[sessionId] = remaining;
     if (all[sessionId].length === 0) delete all[sessionId];
     writeCache(all);
     process.exit(0);

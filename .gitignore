@@ -59,10 +59,9 @@ skills/visual-audit/scripts/.audit/
 .last-cleanup
 
 # ================================================================
-# token-aware runtime telemetrie
+# Runtime telemetrie — všechny JSONL logy v logs/ (token-aware, time-aware, …)
 # ================================================================
-logs/effort-decisions.jsonl
-logs/agent-decisions.jsonl
+logs/*.jsonl
 
 # ================================================================
 # Systémové
