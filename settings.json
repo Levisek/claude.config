@@ -34,11 +34,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/block-destructive.js"
+            "command": "node $HOME/.claude/hooks/block-destructive.js"
           },
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/test-gate.js"
+            "command": "node $HOME/.claude/hooks/test-gate.js"
           }
         ]
       },
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/block-protected.js"
+            "command": "node $HOME/.claude/hooks/block-protected.js"
           }
         ]
       },
@@ -56,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/auto-approve-read.js"
+            "command": "node $HOME/.claude/hooks/auto-approve-read.js"
           }
         ]
       },
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/track-agents.js"
+            "command": "node $HOME/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/auto-tsc.js"
+            "command": "node $HOME/.claude/hooks/auto-tsc.js"
           }
         ]
       },
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/track-agents.js"
+            "command": "node $HOME/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -95,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/session-context.js"
+            "command": "node $HOME/.claude/hooks/session-context.js"
           }
         ]
       }
@@ -105,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/session-end.js"
+            "command": "node $HOME/.claude/hooks/session-end.js"
           }
         ]
       }
@@ -115,7 +115,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/pre-compact.js"
+            "command": "node $HOME/.claude/hooks/pre-compact.js"
           }
         ]
       }
@@ -125,7 +125,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/levingerm/.claude/hooks/detect-triggers.js"
+            "command": "node $HOME/.claude/hooks/detect-triggers.js"
           }
         ]
       }
@@ -138,7 +138,7 @@
   ],
   "statusLine": {
     "type": "command",
-    "command": "node \"C:\\Users\\levingerm\\.claude\\scripts\\levis-usage-dump.js\"",
+    "command": "node \"$HOME/.claude/scripts/levis-usage-dump.js\"",
     "padding": 0
   },
   "enabledPlugins": {
