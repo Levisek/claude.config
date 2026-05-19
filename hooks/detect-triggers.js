@@ -51,12 +51,14 @@ process.stdin.on('end', () => {
     sections.push(`[auto-trigger: "${tokenMatch}"] User message naznačuje plánovaný dispatch subagentů nebo netriviální plán. Před dispatchem:
 
 1. **Invokuj skill token-aware** (jednou za turn, ne opakovaně) — vyhodnotí strategii a zapíše snapshot pro status panel.
-2. **Routing tabulka** (CLAUDE.md: Subagent budget):
-   - implementer (mechanický, 1–2 soubory) → haiku
-   - implementer (multi-file, integrace) → sonnet
-   - spec reviewer → haiku
-   - code/final reviewer → sonnet (rozsáhlé → opus)
-3. **Vždy předávej model: parametr explicitně** v Agent tool calls — bez něj agent zdědí parent (opus) = drahé.
+2. **Pre-bind subagenty** (definice v \`~/.claude/agents/<name>.md\`):
+   - \`implementer-mech\` (haiku) — 1-2 file mechanical change
+   - \`implementer-multi\` (sonnet) — multi-file / integration
+   - \`spec-reviewer\` (haiku) — spec ↔ code check
+   - \`code-reviewer\` (sonnet) — quality, smells, bugs
+   - \`dead-code-scanner\` (haiku) — unused exports/imports
+   - \`architect\` (opus) — design decisions, ADR
+3. **Dispatchuj jménem**: \`subagent_type: "<name>"\` v Agent tool callu. Model je v frontmatteru — explicit \`model:\` parametr není potřeba, ale stále override-uje pokud ho předáš.
 4. Pro 3+ tasků: SDD parallel batch mode je DEFAULT (viz CLAUDE.md).
 
 Pokud user signál byl false-positive (např. mluví o agentech jako konceptu, ne o dispatchi), ignoruj.`);
