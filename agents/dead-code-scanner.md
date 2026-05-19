@@ -26,6 +26,8 @@ Return a markdown table:
 
 If nothing found: `No dead code detected.`
 
+Output ONLY the final table or the `No dead code detected.` line. No thinking aloud, no self-correction in the output, no preamble, no commentary. Decide first, then emit one final answer.
+
 ## Limits
 
 - Do not flag entry points (e.g., `default export` of a route handler, `main` function).
