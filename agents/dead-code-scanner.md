@@ -30,6 +30,7 @@ If nothing found: `No dead code detected.`
 
 - Do not flag entry points (e.g., `default export` of a route handler, `main` function).
 - Do not flag symbols exported via `index.ts` barrel even if barrel itself is unused — the barrel is the caller.
+- Do not flag symbols that appear in any re-export statement (`export { X } from ...`) — confidence is medium at best, even if direct imports are not found.
 - Do not edit anything. You only report.
 
 ## Escalation
