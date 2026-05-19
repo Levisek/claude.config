@@ -32,6 +32,11 @@ process.stdin.on('end', () => {
     && source === 'startup'
     && (git.inRepo || proj.hasPackageJson);
 
+  // Sparkline jen na startup a compact (compact = Claude lost context, potřebuje orientaci).
+  const shouldSparkline = source === 'startup' || source === 'compact';
+  // Welcome tip jen na startup — resume/clear/compact znamenají, že user už ví co dělá.
+  const shouldTip = source === 'startup' && config.banner.showWelcomeTip;
+
   if (shouldBanner) {
     const title = (proj.name || path.basename(cwd)).replace(/[^a-zA-Z0-9\- ]/g, '');
     if (title.length <= 14) {
@@ -51,8 +56,8 @@ process.stdin.on('end', () => {
       + (!git.hasUpstream ? ' (no upstream)' : (git.ahead === 0 && git.behind === 0 && git.dirtyCount === 0 ? `${g.sep}sync` : ''));
     panelLines.push(branchLine);
 
-    // Sparkline posledních commitů (pokud jsou)
-    if (git.recentCommits && git.recentCommits.length > 0) {
+    // Sparkline posledních commitů (pokud jsou) — jen na startup/compact
+    if (shouldSparkline && git.recentCommits && git.recentCommits.length > 0) {
       const sizes = git.recentCommits.map(c => c.additions + c.deletions).reverse();
       const spark = theme.sparkline(sizes);
       panelLines.push(`${g.doc} posledních ${git.recentCommits.length} commitů ${spark}`);
@@ -68,7 +73,7 @@ process.stdin.on('end', () => {
       panelLines.push(`${g.note} ${git.dirtyCount} změn v pracovním stromu`);
     }
 
-    if (config.banner.showWelcomeTip) {
+    if (shouldTip) {
       panelLines.push('');
       panelLines.push(`${g.info}  tip: napiš /welcome pro rychlý přehled Claude Code`);
     }
@@ -81,7 +86,7 @@ process.stdin.on('end', () => {
   } else {
     // Není git repo
     const lines = [`${g.info} Složka není git repo`];
-    if (config.banner.showWelcomeTip) {
+    if (shouldTip) {
       lines.push('');
       lines.push(`${g.info}  tip: napiš /welcome pro rychlý přehled Claude Code`);
     }
