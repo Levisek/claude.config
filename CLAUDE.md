@@ -38,20 +38,22 @@ Když pouštíš sérii subagentů (`subagent-driven-development`, `executing-pl
 nebo vlastní fan-out), drž se tohoto routingu. SDD/superpowers default je moc
 drahý a často nasadí sonnet na úkoly co zvládne haiku.
 
-- **implementer** (mechanický task, 1–2 soubory, jasný spec) → **haiku**
-- **implementer** (multi-file, integrace, refactor) → **sonnet**
-- **spec reviewer** (porovná spec ↔ kód, žádný úsudek) → **haiku**
-- **code quality reviewer** (hledá patterns, bugs, smells) → **sonnet**
-- **final code reviewer** (celá implementace) → **sonnet** (jen pokud rozsáhlé → opus)
-- **main coordinator / orchestrator** (tj. já) → **opus**
+- **`implementer-mech`** (haiku) — mechanický task, 1-2 soubory, jasný spec
+- **`implementer-multi`** (sonnet) — multi-file, integrace, cross-boundary refactor
+- **`spec-reviewer`** (haiku) — deterministic spec ↔ code mapping (PASS/FAIL)
+- **`code-reviewer`** (sonnet) — quality, smells, bugs, security (judgment-based)
+- **`dead-code-scanner`** (haiku) — unused exports/imports/funkce
+- **`architect`** (opus) — design decisions, ADR-style output
+- **main coordinator / orchestrator** (= já, hlavní turn) → opus
+
+Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
+
+**Dispatch:** Použij `subagent_type: "<name>"` v Agent tool callu. Model je v
+frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
 
 **Eskalace:** pokud subagent vrátí `BLOCKED` nebo `NEEDS_CONTEXT`, re-dispatch
 o jednu úroveň výš (haiku → sonnet, sonnet → opus). Nikdy nestřílej opus jako
 default „pro jistotu".
-
-**Předávání Agent tool:** parametr `model: "haiku"` / `"sonnet"` / `"opus"` se
-předává explicitně při dispatchi. Bez něj agent zdědí parent model = opus =
-drahé. Vždy explicitně specifikuj model podle tabulky výše.
 
 ## Time calibration
 
@@ -88,6 +90,12 @@ uživatel explicitně řekne *"jeď po jednom"*.
 **Stop conditions:** implementer vrátí `BLOCKED` / `NEEDS_CONTEXT` → ten task
 degraduj na sériový, batch dokonči bez něj. Detail viz
 `subagent-driven-development` skill, sekce *Parallel Batch Mode*.
+
+---
+
+**Pre-bind subagenty:** definice v `~/.claude/agents/*.md` — dispatchuj přes
+`subagent_type` (viz *Subagent budget* výše). 6 rolí: implementer-mech/multi,
+spec-reviewer, code-reviewer, dead-code-scanner, architect.
 
 ---
 
