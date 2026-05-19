@@ -107,6 +107,11 @@
       }
     ]
   },
+  "claudeMdExcludes": [
+    "**/node_modules/**/CLAUDE.md",
+    "**/.claude/plugins/cache/**/CLAUDE.md",
+    "**/.claude/skills/trailofbits/CLAUDE.md"
+  ],
   "statusLine": {
     "type": "command",
     "command": "node \"C:\\Users\\admin\\.claude\\scripts\\levis-usage-dump.js\"",
