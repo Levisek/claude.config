@@ -25,6 +25,23 @@ process.stdin.on('end', () => {
   const proj = projectInfo(cwd);
   const git = gitInfo(cwd);
 
+  // Write SessionStart marker pro pozdější SessionEnd hook (jen na startup).
+  const sessionId = data?.session_id || '';
+  if (sessionId && source === 'startup') {
+    const fs = require('fs');
+    const markerPath = path.join(os.homedir(), '.claude', 'cache', `session-start-${sessionId}.json`);
+    const marker = {
+      ts: Date.now(),
+      branch: git.branch || null,
+      headSha: git.recentCommits?.[0]?.hash || null,
+      cwd: cwd,
+    };
+    try {
+      fs.mkdirSync(path.dirname(markerPath), { recursive: true });
+      fs.writeFileSync(markerPath, JSON.stringify(marker));
+    } catch {}
+  }
+
   const parts = [];
 
   // Figlet banner — jen na startup a pokud je to git repo / reálný projekt, ne generic složka.
