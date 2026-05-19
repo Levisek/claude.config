@@ -18,7 +18,7 @@ try {
 
 // Sanity checks — validator must always produce output describing state.
 if (result.code === 0) {
-  if (!result.stdout.includes('OK') || !result.stdout.includes('6')) {
+  if (!result.stdout.includes('OK — 6 agents')) {
     console.error('FAIL: exit 0 but OK/count missing in stdout');
     process.exit(1);
   }
