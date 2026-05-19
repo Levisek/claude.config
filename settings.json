@@ -131,11 +131,6 @@
       }
     ]
   },
-  "claudeMdExcludes": [
-    "**/node_modules/**/CLAUDE.md",
-    "**/.claude/plugins/cache/**/CLAUDE.md",
-    "**/.claude/skills/trailofbits/CLAUDE.md"
-  ],
   "statusLine": {
     "type": "command",
     "command": "node \"$HOME/.claude/scripts/levis-usage-dump.js\"",
@@ -144,5 +139,11 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "claudeMdExcludes": [
+    "**/node_modules/**/CLAUDE.md",
+    "**/.claude/plugins/cache/**/CLAUDE.md",
+    "**/.claude/skills/trailofbits/CLAUDE.md"
+  ],
+  "skipDangerousModePermissionPrompt": true
 }
