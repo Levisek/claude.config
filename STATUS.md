@@ -42,18 +42,20 @@ Subagent budget sekce sjednocená s pre-bind agent names. Pre-bind pointer přid
 
 `scripts/validate-runtime.js` + `/validate-runtime` slash command. Investigation finding: Anthropic Agent enum loads at session start (not hot-reloaded jako settings/commands).
 
-## ⚠️ Critical post-restart verification
+## ✅ Post-restart verification (2026-05-20)
 
-**Pre-bind agents byly vytvořeny v session co teď probíhá. Anthropic NEZNÁ je dokud nezrestartuješ Claude Code.**
+Fleet smoke test po restartu — všech 6 pre-bind agentů harness rozpoznal:
 
-Po restartu + `git pull`, zkus toto:
+| Agent | Model | Latence | Tokens |
+|---|---|---:|---:|
+| implementer-mech | haiku | 975 ms | 7 763 |
+| implementer-multi | sonnet | 1 891 ms | 8 985 |
+| spec-reviewer | haiku | 1 000 ms | 5 509 |
+| code-reviewer | sonnet | 913 ms | 5 506 |
+| dead-code-scanner | haiku | 1 113 ms | 5 615 |
+| architect | opus | 2 124 ms | 8 339 |
 
-```
-Agent(subagent_type: "implementer-mech", description: "smoke test", prompt: "Respond OK only")
-```
-
-- ✅ Pokud odpoví "OK" → Sub-projekt A delivers cost saving as designed
-- ❌ Pokud "Agent type not found" → bug v Anthropic harness / PDF claim není pravdivý → investigation needed
+Sub-projekt A delivers — cost-saving routing v provozu.
 
 ## D4-D7 — pending
 
