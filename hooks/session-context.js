@@ -110,6 +110,41 @@ process.stdin.on('end', () => {
     parts.push(theme.box({ title: proj.name, lines }));
   }
 
+  // Memory pull — na startup a compact, inject poslední session-log entry
+  const shouldPullMemory = (source === 'startup' || source === 'compact') && git.inRepo;
+  if (shouldPullMemory) {
+    try {
+      const fs = require('fs');
+      const { encodeRepoPath } = require(path.join(os.homedir(), '.claude', 'lib', 'repo-path.js'));
+      const logPath = path.join(os.homedir(), '.claude', 'projects', encodeRepoPath(cwd), 'memory', 'session-log.md');
+      const raw = fs.readFileSync(logPath, 'utf8');
+      // Extract last `## ...` block
+      const lastIdx = raw.lastIndexOf('\n## ');
+      const lastBlock = lastIdx >= 0 ? raw.slice(lastIdx + 1) : '';
+      const trimmed = lastBlock.trim().slice(0, 500);
+      if (trimmed) {
+        parts.push('\n**Previous session:**\n' + trimmed);
+      }
+    } catch {}
+  }
+
+  // Compact replay — jen pro compact, inject pre-compact snapshot
+  if (source === 'compact' && sessionId) {
+    try {
+      const fs = require('fs');
+      const snapPath = path.join(os.homedir(), '.claude', 'cache', `pre-compact-${sessionId}.json`);
+      const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+      const replayLines = [
+        `**Pre-compact state** (compacted at ${new Date(snap.ts).toISOString()}):`,
+      ];
+      for (const c of (snap.recent_commits || []).slice(0, 3)) {
+        replayLines.push(`- ${c.hash} ${c.subject}`);
+      }
+      replayLines.push(`- ${(snap.git_status || []).length} dirty files, ${(snap.recent_agents || []).length} recent agents`);
+      parts.push('\n' + replayLines.join('\n'));
+    } catch {}
+  }
+
   const context = parts.join('\n');
 
   console.log(JSON.stringify({

@@ -30,11 +30,24 @@ function runHook(source) {
 const TIP_ANCHOR = 'napiš /welcome';
 const SPARK_ANCHOR = 'posledních ';
 
+// Win 3 setup: vytvoř fake session-log.md entry pro memory pull test
+const fs = require('fs');
+const { encodeRepoPath } = require(path.join(os.homedir(), '.claude', 'lib', 'repo-path.js'));
+const memoryDir = path.join(os.homedir(), '.claude', 'projects', encodeRepoPath(CWD), 'memory');
+const logPath = path.join(memoryDir, 'session-log.md');
+const SENTINEL = `__test-sentinel-${Date.now()}__`;
+let restoredLog = null;
+try {
+  if (fs.existsSync(logPath)) restoredLog = fs.readFileSync(logPath, 'utf8');
+  fs.mkdirSync(memoryDir, { recursive: true });
+  fs.appendFileSync(logPath, `\n## 2026-05-19 10:00–10:30 (30 min) ${SENTINEL}\n- branch: master\n- commits: 1\n- exit: clean\n`);
+} catch {}
+
 const cases = [
-  { source: 'startup', mustContain: [TIP_ANCHOR, SPARK_ANCHOR], mustNotContain: [] },
-  { source: 'resume',  mustContain: [],                          mustNotContain: [TIP_ANCHOR, SPARK_ANCHOR] },
-  { source: 'clear',   mustContain: [],                          mustNotContain: [TIP_ANCHOR, SPARK_ANCHOR] },
-  { source: 'compact', mustContain: [SPARK_ANCHOR],              mustNotContain: [TIP_ANCHOR] },
+  { source: 'startup', mustContain: [TIP_ANCHOR, SPARK_ANCHOR, SENTINEL], mustNotContain: [] },
+  { source: 'resume',  mustContain: [],                                    mustNotContain: [TIP_ANCHOR, SPARK_ANCHOR, SENTINEL] },
+  { source: 'clear',   mustContain: [],                                    mustNotContain: [TIP_ANCHOR, SPARK_ANCHOR, SENTINEL] },
+  { source: 'compact', mustContain: [SPARK_ANCHOR, SENTINEL],              mustNotContain: [TIP_ANCHOR] },
 ];
 
 let failed = 0;
@@ -59,6 +72,12 @@ for (const c of cases) {
     console.log(`PASS [source=${c.source}]`);
   }
 }
+
+// Cleanup: restore original session-log.md
+try {
+  if (restoredLog !== null) fs.writeFileSync(logPath, restoredLog);
+  else fs.unlinkSync(logPath);
+} catch {}
 
 if (failed > 0) {
   console.error(`\n${failed} of ${cases.length} cases failed`);
