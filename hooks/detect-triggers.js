@@ -40,10 +40,30 @@ process.stdin.on('end', () => {
     'how long', 'estimate', 'estimation',
   ];
 
+  // Win 3: konzervativní task-phrase hinty pro under-triggered skills.
+  // Multi-word phrases jen — single-word triggery by způsobily false positives.
+  const skillHints = [
+    {
+      name: 'tsc-verification',
+      keywords: ['tsc check', 'kompiluje', 'npx tsc', 'spusť tsc', 'tsc --noemit'],
+    },
+    {
+      name: 'security-audit',
+      keywords: ['zkontroluj bezpečnost', 'bezpečnostní audit', 'audit kódu', 'najdi zranitelnosti', 'security audit', 'security review'],
+    },
+    {
+      name: 'visual-audit',
+      keywords: ['vizuální audit', 'visual audit', 'wcag', 'ui audit', 'projdi ui', 'kontrast audit'],
+    },
+  ];
+
   const tokenMatch = firstMatch(prompt, tokenTriggers);
   const timeMatch = firstMatch(prompt, timeTriggers);
+  const matchedSkills = skillHints
+    .filter(s => s.keywords.some(kw => prompt.includes(kw)))
+    .map(s => `[Hint] Skill \`${s.name}\` may apply for this task.`);
 
-  if (!tokenMatch && !timeMatch) process.exit(0);
+  if (!tokenMatch && !timeMatch && matchedSkills.length === 0) process.exit(0);
 
   const sections = [];
 
@@ -69,6 +89,10 @@ Pokud user signál byl false-positive (např. mluví o agentech jako konceptu, n
     const repo = resolveRepoSafely(cwd);
     const timeBlock = buildTimeBlock(repo);
     if (timeBlock) sections.push(timeBlock);
+  }
+
+  if (matchedSkills.length > 0) {
+    sections.push(matchedSkills.join('\n'));
   }
 
   if (sections.length === 0) process.exit(0);
