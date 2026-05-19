@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 const { resolveRepoName } = require(path.join(os.homedir(), '.claude', 'lib', 'repo-name.js'));
 
@@ -40,7 +41,7 @@ function recordStart({ sessionId, toolUseId, ti, cwd, model, now }) {
   try { repo = resolveRepoName(cwd || process.cwd()); } catch {}
 
   return {
-    id: toolUseId || `t${t}${Math.floor(Math.random() * 1000)}`,
+    id: toolUseId || `t${t}${crypto.randomBytes(4).toString('hex')}`,
     startedAt: t,
     subagent_type: subagentType,
     description: desc,

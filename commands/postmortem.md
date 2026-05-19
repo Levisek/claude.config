@@ -11,7 +11,7 @@ Po dokončeném úkolu zaznamenej, co se odlišilo od očekávání. Slouží ja
 Pomocí `lib/repo-name.js` (`resolveRepoName(process.cwd())`) urči kanonické jméno repa. Pokud máš shell, jednoduše:
 
 ```
-node -e "console.log(require('C:/Users/admin/.claude/lib/repo-name.js').resolveRepoName())"
+node -e "console.log(require('C:/Users/levingerm/.claude/lib/repo-name.js').resolveRepoName())"
 ```
 
 ### 2. Zeptej se přes AskUserQuestion (2 otázky)
@@ -26,7 +26,7 @@ node -e "console.log(require('C:/Users/admin/.claude/lib/repo-name.js').resolveR
 
 ### 3. Zápis
 
-Soubor: `C:/Users/admin/.claude/memory/surprises-<repo>.md`
+Soubor: `C:/Users/levingerm/.claude/memory/surprises-<repo>.md`
 
 Pokud neexistuje, vytvoř s frontmatter (kompatibilní s auto-memory schématem):
 

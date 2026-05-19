@@ -30,7 +30,7 @@ process.stdin.on('end', () => {
     { re: /\bchmod\s+-[a-z]*r[a-z]*\s+777\s+\//, why: 'chmod -R 777 /' },
     { re: /\bformat\s+[a-z]:/i, why: 'format C:' },
     { re: /remove-item\s+.*-recurse.*-force.*[a-z]:\\/i, why: 'Remove-Item -Recurse -Force' },
-    { re: /\bgit\s+push\s+.*--force\b/, why: 'git push --force' },
+    { re: /\bgit\s+push\s+.*--force(?!-with-lease)\b/, why: 'git push --force' },
     { re: /\bgit\s+push\s+.*-f\b(?!\w)/, why: 'git push -f' },
     { re: /\bgit\s+reset\s+--hard\s+(head~|origin)/, why: 'git reset --hard' },
     { re: /\bgit\s+clean\s+-[a-z]*f/, why: 'git clean -f' },

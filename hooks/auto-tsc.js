@@ -50,9 +50,19 @@ process.stdin.on('end', () => {
       l.includes(relEdited) || l.includes(path.basename(file))
     );
 
-    writeStatus(sessionId, { ok: false, errors: lines.length, file: relEdited, timestamp: Date.now() });
+    const isTimeout = e.code === 'ETIMEDOUT' || e.signal === 'SIGTERM';
+    writeStatus(sessionId, { ok: false, errors: lines.length, file: relEdited, timestamp: Date.now(), timeout: isTimeout });
 
-    if (lines.length === 0) process.exit(0);
+    if (lines.length === 0) {
+      if (isTimeout) {
+        const g = theme.glyphs();
+        console.log(theme.box({
+          title: `${g.warn} tsc timeout (20s) · ${relEdited}`,
+          lines: [`${g.bulb} tip: spusť /tsc ručně`],
+        }));
+      }
+      process.exit(0);
+    }
 
     const top = lines.slice(0, 5).map(l => compactError(l, tsconfigDir));
     const boxLines = [...top];

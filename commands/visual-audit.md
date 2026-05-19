@@ -1,3 +1,7 @@
+---
+description: VISUAL-AUDIT — Runtime vizuální audit
+---
+
 # VISUAL-AUDIT — Runtime vizuální audit
 
 Projede živý web nebo Electron app přes Playwright, vygeneruje `VISUAL-AUDIT.md` v rootu projektu.

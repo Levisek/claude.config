@@ -34,7 +34,6 @@ Pak tři unicode rámečky pod sebou:
 │  /commit     Navrhne a commitne změny                │
 │  /push       Bezpečný git push s kontrolami          │
 │  /theme      Přepne vizuální styl (default/nerd/...) │
-│  /iq         Přepne reasoning effort (60/75/99)      │
 ╰──────────────────────────────────────────────────────╯
 
 ╭─ tipy pro nováčky ───────────────────────────────────╮

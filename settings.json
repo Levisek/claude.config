@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/block-destructive.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/block-destructive.js"
           }
         ]
       },
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/block-protected.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/block-protected.js"
           }
         ]
       },
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/auto-approve-read.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/auto-approve-read.js"
           }
         ]
       },
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/track-agents.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/auto-tsc.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/auto-tsc.js"
           }
         ]
       },
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/track-agents.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/track-agents.js"
           }
         ]
       }
@@ -91,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/session-context.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/session-context.js"
           }
         ]
       }
@@ -101,7 +101,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/admin/.claude/hooks/detect-triggers.js"
+            "command": "node C:/Users/levingerm/.claude/hooks/detect-triggers.js"
           }
         ]
       }
@@ -114,12 +114,11 @@
   ],
   "statusLine": {
     "type": "command",
-    "command": "node \"C:\\Users\\admin\\.claude\\scripts\\levis-usage-dump.js\"",
+    "command": "node \"C:\\Users\\levingerm\\.claude\\scripts\\levis-usage-dump.js\"",
     "padding": 0
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
-  "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true
+  "autoUpdatesChannel": "latest"
 }
