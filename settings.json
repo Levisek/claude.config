@@ -35,6 +35,10 @@
           {
             "type": "command",
             "command": "node C:/Users/levingerm/.claude/hooks/block-destructive.js"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/test-gate.js"
           }
         ]
       },
@@ -92,6 +96,26 @@
           {
             "type": "command",
             "command": "node C:/Users/levingerm/.claude/hooks/session-context.js"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/session-end.js"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/levingerm/.claude/hooks/pre-compact.js"
           }
         ]
       }
