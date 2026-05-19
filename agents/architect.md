@@ -50,6 +50,7 @@ Markdown with these sections (each 50-200 words):
 ## Escalation
 
 - `NEEDS_CONTEXT: <what>` — if business constraints, deadlines, or stakeholder priorities are unclear, ask before recommending. An architect without context produces guesses.
+- `BLOCKED: <reason>` — if the decision is genuinely outside technical reasoning (purely political, or constraints are mutually incompatible). An architect cannot manufacture trade-offs that don't exist.
 
 ## Anti-patterns
 
