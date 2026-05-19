@@ -49,6 +49,23 @@ budget rozdělí sám).
 
 Detail per-role pro SDD viz CLAUDE.md *Subagent budget*.
 
+## Pre-bind subagenty
+
+K dispozici v `~/.claude/agents/<name>.md` (model je v frontmatteru, dispatchuj přes `subagent_type: "<name>"`):
+
+| Subagent | Model | Tools | Kdy použít |
+|---|---|---|---|
+| `implementer-mech` | haiku | Read/Edit/Bash | 1-2 file mechanical edit (rename, typo, format, single-fn change) |
+| `implementer-multi` | sonnet | Read/Edit/Bash/Grep/Glob | Multi-file change, integrace, refactor 3+ souborů |
+| `spec-reviewer` | haiku | Read/Grep/Glob | Deterministický spec ↔ code mapping (PASS/FAIL list) |
+| `code-reviewer` | sonnet | Read/Grep/Glob | Quality, smells, bugs, security — judgment-based |
+| `dead-code-scanner` | haiku | Read/Grep/Glob | Unused exports/imports — TS/JS, mechanical |
+| `architect` | opus | Read/Grep/Glob/WebFetch | Design decisions, ADR-style output, cross-cutting |
+
+**Použití místo ad-hoc:** Když dispatchuje, preferuj pre-bind agenta jménem před generickým `general-purpose` s explicit model parametrem. Důvod: agent má pevný role prompt + tools + output kontrakt v souboru, takže prompt v Agent tool callu může být kratší (žádné "You are a senior reviewer..."). Token saving.
+
+**Resolver pořadí** (Anthropic docs): `CLAUDE_CODE_SUBAGENT_MODEL` env var > per-invocation `model:` parametr > frontmatter `model:` > parent. Nemáme env var nastavenou, takže frontmatter rozhoduje.
+
 ## Agent snapshot pro statusLine
 
 Status line panel má segment `iq` který čte `~/.claude/cache/iq-state.json`.
