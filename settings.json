@@ -126,6 +126,10 @@
           {
             "type": "command",
             "command": "node $HOME/.claude/hooks/detect-triggers.js"
+          },
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/context-watch.js"
           }
         ]
       }
