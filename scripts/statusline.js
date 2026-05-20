@@ -300,27 +300,32 @@ function cacheSegment(data) {
 }
 
 function mcpSegment() {
+  // Non-blocking: vždy vrátíme cached hodnotu okamžitě. Pokud je stale,
+  // spustíme refresh na pozadí (detached) a příští render dostane novou hodnotu.
+  // Důvod: PowerShell + Get-CimInstance trvá ~2s — nesmí blokovat statusline (<50ms target).
   const cachePath = path.join(os.homedir(), '.claude', 'cache', 'mcp-status.json');
-  const TTL_MS = 30 * 1000;
+  const TTL_MS = 5 * 60 * 1000; // 5 min — MCP server se nezapíná často
   let cache = {};
   try { cache = JSON.parse(fs.readFileSync(cachePath, 'utf8')); } catch {}
 
-  let serenaUp = cache.serena;
-  if (!cache.t || (Date.now() - cache.t) >= TTL_MS) {
+  const isStale = !cache.t || (Date.now() - cache.t) >= TTL_MS;
+  if (isStale) {
+    // Fire-and-forget refresh v subprocess. Nečekáme na výsledek.
     try {
-      const r = spawnSync('powershell', [
-        '-NoProfile', '-Command',
-        "(Get-CimInstance Win32_Process | Where-Object { $_.Name -in 'serena.exe','python.exe' -and $_.CommandLine -like '*start-mcp-server*' } | Measure-Object).Count"
-      ], { encoding: 'utf8', timeout: 4000, windowsHide: true });
-      serenaUp = parseInt(String(r.stdout).trim(), 10) > 0;
-    } catch { serenaUp = false; }
-    try {
-      fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-      fs.writeFileSync(cachePath, JSON.stringify({ t: Date.now(), serena: serenaUp }));
+      const refresher = path.join(os.homedir(), '.claude', 'scripts', 'mcp-refresh.js');
+      if (fs.existsSync(refresher)) {
+        const { spawn } = require('child_process');
+        const child = spawn(process.execPath, [refresher], {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true,
+        });
+        child.unref();
+      }
     } catch {}
   }
 
-  if (!serenaUp) return null;
+  if (!cache.serena) return null;
   return { text: 'serena', color: 'brightGreen' };
 }
 
