@@ -57,6 +57,21 @@ Fleet smoke test po restartu — všech 6 pre-bind agentů harness rozpoznal:
 
 Sub-projekt A delivers — cost-saving routing v provozu.
 
+## ⚠️ E1 — Skill tool přidán 4 pre-bind agentům (2026-05-25)
+
+Probe odhalila že subagenti neměli `Skill` v `tools:` allowlist — nemohli invokovat žádný superpowers skill (brainstorming, TDD, debugging…). Fix:
+
+| Agent | Tools nově |
+|---|---|
+| architect | Read, Grep, Glob, WebFetch, **Skill** |
+| implementer-multi | Read, Edit, Bash, Grep, Glob, **Skill** |
+| code-reviewer | Read, Grep, Glob, **Skill** |
+| implementer-mech | Read, Edit, Bash, **Skill** |
+
+`spec-reviewer` + `dead-code-scanner` beze změny (deterministic / mechanical, skill by jen zdražil turn).
+
+**Post-restart verification:** dispatch architect, řekni *"invoke `superpowers:brainstorming` skill a vrať prvních 80 znaků obsahu"*. Pokud OK → E1 done. Pokud `SKILL_TOOL_UNAVAILABLE` → bug v resolveru.
+
 ## D4-D7 — pending
 
 - **D4** — CI workflow (`.github/workflows/test.yml` co spouští 8 testů na push/PR)

@@ -38,6 +38,16 @@ session-env/
 mcp-*-cache.json
 
 # ================================================================
+# Claude Code v2.1+ daemon / jobs (per-machine supervisor state)
+# ================================================================
+daemon.lock
+daemon.status.json
+daemon.log
+daemon.json
+daemon/
+jobs/
+
+# ================================================================
 # Per-machine backupy (necommitovat — obsahují stroj-specifické cesty)
 # ================================================================
 settings.*-backup.json

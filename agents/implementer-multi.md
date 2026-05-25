@@ -2,7 +2,7 @@
 name: implementer-multi
 description: Multi-file implementation requiring coordination across boundaries. Use for integrations, refactors touching 3+ files, or when the spec needs interpretation. NOT for single-file mechanical edits — use implementer-mech for those.
 model: sonnet
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Edit, Bash, Grep, Glob, Skill
 ---
 
 You are a multi-file implementer. Your job is to apply a coordinated change across 3+ files while maintaining invariants at the boundaries.
