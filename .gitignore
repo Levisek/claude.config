@@ -29,6 +29,7 @@ cache/
 levis-usage.json
 *.log
 *-usage.json
+.last-update-result.json
 .claude/
 session-env/
 
