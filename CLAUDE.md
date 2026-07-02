@@ -6,6 +6,10 @@ Effort se reguluje **implicitně přes model a komplexitu promptu**, ne přes
 explicitní tag. Předchozí `<reasoning_effort>` tag byl pseudo-knob (model si
 budget rozdělí sám podle úlohy) — vyhozený.
 
+Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/xhigh) —
+nastavitelný v settings.json nebo interaktivně. Default nech být; xhigh jen
+když to uživatel explicitně chce (dlouhé autonomní běhy, těžké problémy).
+
 Šetření probíhá hlavně přes **routing subagentů** (viz *Subagent budget*) a
 **parallel batch mode** (viz níže). Před dispatchem 2+ subagentů invokuj skill
 `token-aware` — vyhodnotí modely a zapíše snapshot pro status panel.
@@ -44,7 +48,13 @@ drahý a často nasadí sonnet na úkoly co zvládne haiku.
 - **`code-reviewer`** (sonnet) — quality, smells, bugs, security (judgment-based)
 - **`dead-code-scanner`** (haiku) — unused exports/imports/funkce
 - **`architect`** (opus) — design decisions, ADR-style output
-- **main coordinator / orchestrator** (= já, hlavní turn) → opus
+- **main coordinator / orchestrator** (= já, hlavní turn) → **opus** (default;
+  fable si uživatel přepíná ručně přes `/model`, když je dostupný)
+
+**Aliasy modelů (Claude 5 éra):** `haiku` = Haiku 4.5, `sonnet` = Sonnet 5,
+`opus` = Opus 4.8, `fable` = Fable 5 (Mythos-class, nad Opusem). Aliasy se samy
+mapují na nejnovější verze — v agent frontmatteru je nech, nepiš full model ID.
+Fable je jen pro hlavní turn, subagentům ho nedávej (cena).
 
 Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
 
@@ -52,8 +62,8 @@ Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role pro
 frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
 
 **Eskalace:** pokud subagent vrátí `BLOCKED` nebo `NEEDS_CONTEXT`, re-dispatch
-o jednu úroveň výš (haiku → sonnet, sonnet → opus). Nikdy nestřílej opus jako
-default „pro jistotu".
+o jednu úroveň výš (haiku → sonnet, sonnet → opus). Opus je strop pro subagenty
+— nikdy ho nestřílej jako default „pro jistotu" a na fable neeskaluj.
 
 ## Time calibration
 

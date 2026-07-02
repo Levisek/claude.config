@@ -27,6 +27,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -48,15 +49,6 @@
           {
             "type": "command",
             "command": "node $HOME/.claude/hooks/block-protected.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Glob|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $HOME/.claude/hooks/auto-approve-read.js"
           }
         ]
       },
@@ -141,13 +133,17 @@
     "padding": 0
   },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
   "autoUpdatesChannel": "latest",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
   "claudeMdExcludes": [
     "**/node_modules/**/CLAUDE.md",
     "**/.claude/plugins/cache/**/CLAUDE.md",
     "**/.claude/skills/trailofbits/CLAUDE.md"
-  ],
-  "skipDangerousModePermissionPrompt": true
+  ]
 }
