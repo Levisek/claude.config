@@ -27,7 +27,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "opus",
+  "model": "claude-fable-5[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -134,7 +134,7 @@
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true,
+    "hookify@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },

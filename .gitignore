@@ -27,6 +27,7 @@ cache/
 # Lokální stav / usage tracking
 # ================================================================
 levis-usage.json
+levis-usage-history.json
 *.log
 *-usage.json
 .last-update-result.json
