@@ -32,7 +32,7 @@ budget rozdělí sám).
 1. **Vyhodnoť strategii agentů** (rubrika níže) → seznam plánovaných dispatches
    s konkrétními modely.
 2. **Zapiš agent snapshot** do `~/.claude/cache/iq-state.json` — statusLine z
-   toho vyrendruje `[ main:opus 4.7 │ plán: 2×haiku, 1×sonnet ]` (zobrazí se
+   toho vyrendruje `[ main:opus 5 │ plán: 2×haiku, 1×sonnet ]` (zobrazí se
    jen pokud je co ukázat).
 3. **Appendni log** do `~/.claude/logs/agent-decisions.jsonl` jediným Bash
    voláním — pro pozdější retrospektivu kolik šetříme.
@@ -76,15 +76,15 @@ Formát souboru — mapa per sessionId + `_latest` fallback:
 
 ```json
 {
-  "_latest": { "ts": 1715683200000, "main": "opus 4.7", "plannedAgents": [{"model":"sonnet","role":"audit","count":1}] },
-  "<sessionId>": { "ts": 1715683200000, "main": "opus 4.7", "plannedAgents": [] }
+  "_latest": { "ts": 1715683200000, "main": "opus 5", "plannedAgents": [{"model":"sonnet","role":"audit","count":1}] },
+  "<sessionId>": { "ts": 1715683200000, "main": "opus 5", "plannedAgents": [] }
 }
 ```
 
 Doporučený zápis (jeden Bash call, node inline — atomic merge):
 
 ```bash
-mkdir -p ~/.claude/cache && node -e "const fs=require('fs'),p=require('os').homedir()+'/.claude/cache/iq-state.json';let a={};try{a=JSON.parse(fs.readFileSync(p,'utf8'))}catch{};const s={ts:Date.now(),main:'opus 4.7',plannedAgents:[{model:'sonnet',role:'audit',count:1}]};a._latest=s;a['<sessionId>']=s;fs.writeFileSync(p,JSON.stringify(a));"
+mkdir -p ~/.claude/cache && node -e "const fs=require('fs'),p=require('os').homedir()+'/.claude/cache/iq-state.json';let a={};try{a=JSON.parse(fs.readFileSync(p,'utf8'))}catch{};const s={ts:Date.now(),main:'opus 5',plannedAgents:[{model:'sonnet',role:'audit',count:1}]};a._latest=s;a['<sessionId>']=s;fs.writeFileSync(p,JSON.stringify(a));"
 ```
 
 Pole `plannedAgents` může být prázdné — pokud žádné nedispatchuješ, snapshot ani
@@ -98,7 +98,7 @@ Po každém rozhodnutí appendni jeden řádek JSONL do
 Příklad (jeden line, žádný node parsing):
 
 ```bash
-mkdir -p ~/.claude/logs && printf '%s\n' '{"ts":"2026-05-13T15:30:00Z","trigger":"writing-plans","main":"opus 4.7","agents":[{"model":"haiku","role":"explore","count":2}],"user_intent":"naplánuj refactor X"}' >> ~/.claude/logs/agent-decisions.jsonl
+mkdir -p ~/.claude/logs && printf '%s\n' '{"ts":"2026-05-13T15:30:00Z","trigger":"writing-plans","main":"opus 5","agents":[{"model":"haiku","role":"explore","count":2}],"user_intent":"naplánuj refactor X"}' >> ~/.claude/logs/agent-decisions.jsonl
 ```
 
 Klíče (povinné): `ts`, `trigger`, `main`, `agents` (array — může být prázdné),

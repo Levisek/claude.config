@@ -30,7 +30,7 @@ Globální Claude Code setup pro Windows: CLAUDE.md pravidla, slash commandy, ho
    - **PreToolUse** doplní chybějící `model:` parametr podle `subagent_type` + description (Explore → haiku, general-purpose review → sonnet, atd.). Zaznamená dispatch.
    - **PostToolUse** odstraní záznam → status panel přestane ukazovat „live".
 
-Status panel zobrazí 2. řádek `[ main:opus 4.7 │ live: 2×haiku ]` jen když je co ukázat (default skrytý). Token-aware skill zapisuje plánovaný dispatch do `~/.claude/cache/iq-state.json`, statusline z toho rendruje `plán: …`.
+Status panel zobrazí 2. řádek `[ main:opus 5 │ live: 2×haiku ]` jen když je co ukázat (default skrytý). Token-aware skill zapisuje plánovaný dispatch do `~/.claude/cache/iq-state.json`, statusline z toho rendruje `plán: …`.
 
 **Parallel batch mode** — default chování SDD: 3 nezávislé tasky paralelně, conflict graph nad target files. Detail v `subagent-driven-development` skill + souhrn v CLAUDE.md.
 

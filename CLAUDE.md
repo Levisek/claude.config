@@ -6,9 +6,14 @@ Effort se reguluje **implicitně přes model a komplexitu promptu**, ne přes
 explicitní tag. Předchozí `<reasoning_effort>` tag byl pseudo-knob (model si
 budget rozdělí sám podle úlohy) — vyhozený.
 
-Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/xhigh) —
-nastavitelný v settings.json nebo interaktivně. Default nech být; xhigh jen
-když to uživatel explicitně chce (dlouhé autonomní běhy, těžké problémy).
+Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/**xhigh**/max)
+— nastavitelný v settings.json nebo interaktivně, default `high`. Status lišta
+ho ukazuje jen když se od defaultu liší (viz `scripts/statusline.js`).
+
+- `xhigh` — coding a agentic práce (Claude Code tam má vlastní default)
+- `high` — všechno ostatní intelligence-sensitive
+- `low`/`medium` — na Opus 5 překvapivě silné, primární páka na cenu a latenci
+- `max` — jen když korektnost přebíjí cenu; umí přemýšlet zbytečně dlouho
 
 Šetření probíhá hlavně přes **routing subagentů** (viz *Subagent budget*) a
 **parallel batch mode** (viz níže). Před dispatchem 2+ subagentů invokuj skill
@@ -49,12 +54,21 @@ drahý a často nasadí sonnet na úkoly co zvládne haiku.
 - **`dead-code-scanner`** (haiku) — unused exports/imports/funkce
 - **`architect`** (opus) — design decisions, ADR-style output
 - **main coordinator / orchestrator** (= já, hlavní turn) → **opus** (default;
-  fable si uživatel přepíná ručně přes `/model`, když je dostupný)
+  fable si uživatel přepíná ručně přes `/model`)
 
-**Aliasy modelů (Claude 5 éra):** `haiku` = Haiku 4.5, `sonnet` = Sonnet 5,
-`opus` = Opus 4.8, `fable` = Fable 5 (Mythos-class, nad Opusem). Aliasy se samy
-mapují na nejnovější verze — v agent frontmatteru je nech, nepiš full model ID.
-Fable je jen pro hlavní turn, subagentům ho nedávej (cena).
+**Aliasy modelů (Claude 5 éra).** Aliasy se samy mapují na nejnovější verze —
+v agent frontmatteru je nech, nepiš full model ID.
+
+| Alias    | Model        | Full ID            | Context | $/1M in-out |
+| -------- | ------------ | ------------------ | ------- | ----------- |
+| `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
+| `sonnet` | Sonnet 5     | `claude-sonnet-5`  | 1M      | $3 / $15    |
+| `opus`   | **Opus 5**   | `claude-opus-5`    | 1M      | $5 / $25    |
+| `fable`  | Fable 5      | `claude-fable-5`   | 1M      | $10 / $50   |
+
+Fable 5 je nejsilnější veřejně dostupný model — dvojnásobná cena Opusu, takže
+jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Mythos 5
+(`claude-mythos-5`) je stejný model pro Project Glasswing — nemáme přístup.
 
 Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
 
