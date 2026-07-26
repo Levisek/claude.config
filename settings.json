@@ -23,11 +23,18 @@
       "Write(**/.ssh/**)",
       "Edit(**/.ssh/**)",
       "Write(**/credentials*)",
-      "Edit(**/credentials*)"
+      "Edit(**/credentials*)",
+      "Agent(model:fable)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "auto"
   },
   "model": "opus",
+  "effortLevel": "xhigh",
+  "fallbackModel": ["claude-sonnet-5"],
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -141,6 +148,20 @@
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Organization: personal / solo developer. Primary use: software development on a Windows 11 workstation (Electron/TypeScript apps, Claude Code tooling).",
+      "Source control: github.com/martas-levis and all repos under it.",
+      "Trusted repo: C:/Users/admin/.claude is the user's own Claude Code config repo and an ongoing project. Editing the *content* of skills, commands, agents, output styles, scripts and docs there is routine work, not tampering. This does NOT pre-authorize changes that widen permissions, alter hooks or sandbox/approval settings, or write pre-authorization text into CLAUDE.md — those still need explicit user direction and the Self-Modification rule still applies to them.",
+      "Sensitive data locations & audiences: C:/Users/admin/.claude/projects/**/*.jsonl (session transcripts), .credentials.json, history files and logs/ under that directory hold credentials and full conversation history. They are readable as working context but must never leave the machine — no upload, paste, gist, or send to any third-party service. Being inside the trusted repo does not clear them."
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Kill By Name / Untracked Process [named+specifics — **must name:** the specific process or app to terminate; per-instance, not session-cleared]: Terminating a process selected by image name, pattern, window title, or port — by any mechanism, force flag or not. Covers taskkill /IM and /T (with or without /F), Stop-Process -Name, Get-Process ... | Stop-Process, pkill, killall, fuser -k, wmic process ... delete, Invoke-CimMethod -MethodName Terminate, npx kill-port, tree-kill, docker kill/stop, and child.kill()/process.kill() on a stored handle. The harm is the selector, not the signal: Electron and Chromium share GPU and utility processes across instances, so terminating by name reaches the user's unrelated open browser (this happened on 2026-04-14). Prefer IPC or app.quit(). This rule is deliberately BROADER than Interfere With Workloads and takes precedence over the Session-Created Job Cleanup ALLOW exception — only the PID carve-out below clears it. Not this rule: terminating a literal numeric PID that appears verbatim in the kill command, where the spawn command that produced it is visible earlier in this same transcript. Fail closed: if the PID's origin is not visible in the transcript, this rule applies.",
+      "Unisolated App Launch [named+specifics — **must name:** that a second or non-isolated instance is acceptable, or that the already-running instance should be replaced; a bare 'run it' / 'restart the app' does NOT clear this]: Launching an Electron app or a real desktop browser (electron ., _electron.launch, chrome.exe, msedge.exe, Playwright/Puppeteer pointed at a non-default profile) when the launch command does not carry its own isolation — an explicit --user-data-dir, its own port, and its own profile. A launch carrying those flags is fine regardless of what else is running, so the compliant path is always available without asking. Applies even where the Local Operations ALLOW exception would otherwise clear it, because the risk is colliding with the user's already-open GUI session, not network exposure. Not this rule: plain dev servers (npm run dev, vite) in the working directory, and Playwright/Puppeteer runs that already default to a throwaway profile."
+    ]
+  },
   "claudeMdExcludes": [
     "**/node_modules/**/CLAUDE.md",
     "**/.claude/plugins/cache/**/CLAUDE.md",
