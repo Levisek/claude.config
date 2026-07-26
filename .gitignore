@@ -82,3 +82,8 @@ Thumbs.db
 desktop.ini
 *.swp
 *~
+
+# Runtime state daemonu a usage trackeru
+daemon-auth-cooldown
+daemon-auth-status.json
+levis-usage-history.json

@@ -23,6 +23,10 @@ process.stdin.on('end', () => {
   let data = {};
   try { data = input ? JSON.parse(input) : {}; } catch {}
 
+  // Config root: CC statusline běží s CLAUDE_CONFIG_DIR nastaveným (work účet)
+  // → dump i wrapper config patří do TOHO config diru, ne natvrdo ~/.claude.
+  const cfgRoot = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+
   // 1) Dump pro LevisIDE Hub
   try {
     const dump = {
@@ -32,7 +36,7 @@ process.stdin.on('end', () => {
       context_window: data.context_window || null,
       model: data.model || null,
     };
-    const dumpPath = path.join(os.homedir(), '.claude', 'levis-usage.json');
+    const dumpPath = path.join(cfgRoot, 'levis-usage.json');
     fs.mkdirSync(path.dirname(dumpPath), { recursive: true });
     fs.writeFileSync(dumpPath, JSON.stringify(dump, null, 2));
   } catch (_err) {
@@ -42,7 +46,7 @@ process.stdin.on('end', () => {
   // 2) Wrapper mode — předej vstup do user's inner statusline
   let innerCmd = null;
   try {
-    const cfgPath = path.join(os.homedir(), '.claude', 'levis-wrapper.json');
+    const cfgPath = path.join(cfgRoot, 'levis-wrapper.json');
     const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
     innerCmd = (cfg && cfg.innerCommand) || null;
   } catch {}
