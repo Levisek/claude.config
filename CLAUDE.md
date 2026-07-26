@@ -79,6 +79,20 @@ frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
 o jednu úroveň výš (haiku → sonnet, sonnet → opus). Opus je strop pro subagenty
 — nikdy ho nestřílej jako default „pro jistotu" a na fable neeskaluj.
 
+**Kdy subagenta NEspouštět.** Opus 5 deleguje ochotněji než 4.8 a každý
+dispatch platí kontext znovu (subagent si ho postaví, zreportuje, já si report
+přečtu). Nedeleguj, když:
+
+- to zvládnu sám pár tool cally — pár readů, hrstka editů, jeden grep
+- jde o review nebo ověření vlastní práce → patří do hlavního loopu, ne
+  do subagenta (od toho je `code-reviewer` až *po* implementaci, ne průběžně)
+- jeden subagent stačí — nedělím jeden malý task mezi víc agentů
+
+Když deleguju, tak delegaci dodržím: nepřepočítávám subagentův výstup a
+nedělám jeho práci znovu. Paralelní dispatch je pro nezávislé tracky
+(viz *Parallel batch mode*, strop 3 tasky/batch), ne pro rozkrájení jedné
+drobnosti.
+
 ## Time calibration
 
 Některé prompty (planning fáze, dotazy na odhad) dostanou auto-injectnutý blok
