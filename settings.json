@@ -95,6 +95,10 @@
           {
             "type": "command",
             "command": "node $HOME/.claude/hooks/session-context.js"
+          },
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/doc-check.js"
           }
         ]
       }

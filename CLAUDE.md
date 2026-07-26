@@ -109,6 +109,26 @@ nedělám jeho práci znovu. Paralelní dispatch je pro nezávislé tracky
 (viz *Parallel batch mode*, strop 3 tasky/batch), ne pro rozkrájení jedné
 drobnosti.
 
+## Dokumentace projektů → Obsidian
+
+Vault pro dev projekty je `C:\dev\vault` (vault *Domácí server* je oddělený a
+zůstává tematicky sevřený jen na homelab).
+
+Hook `doc-check.js` na SessionStart zjistí, jestli otevřený projekt má poznámku
+v `🚀 Projekty/`. Když ne, injektuje do kontextu pokyn **nabídnout dokumentaci**
+— zeptat se jednou větou, ne psát rovnou. Ptá se jen na `source=startup`, mlčí
+u projektů s vlastním Obsidian vaultem a u složek, které nejsou projekt.
+
+Odpověď se **musí zapsat**, jinak se hook zeptá při každém startu znovu:
+
+```bash
+node ~/.claude/scripts/doc-state.js --skip .           # nechce
+node ~/.claude/scripts/doc-state.js --done . "<nota>"  # hotovo
+```
+
+Psaní poznámky řeší skill `obsidian-docs` — zná konvence vaultu (emoji v
+názvech, frontmatter `tags` + `aktualizovano`, callouty, wikilinky, čeština).
+
 ## Time calibration
 
 Některé prompty (planning fáze, dotazy na odhad) dostanou auto-injectnutý blok

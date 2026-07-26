@@ -87,3 +87,6 @@ desktop.ini
 daemon-auth-cooldown
 daemon-auth-status.json
 levis-usage-history.json
+
+# Sandbox a stav doc-check hooku
+cache/doc-check-state.json
