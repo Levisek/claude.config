@@ -58,7 +58,7 @@ process.stdin.on('end', () => {
         const seg = mcpSegment();
         if (seg) segments.push(seg);
       } else if (s === 'iq') {
-        iqLine = iqSegment(sessionId, model);
+        iqLine = iqSegment(sessionId, model, data?.effort?.level);
       }
     } catch {}
   }
@@ -68,16 +68,24 @@ process.stdin.on('end', () => {
   process.stdout.write(out);
 });
 
+// Claude 5 éra: fable/mythos (Mythos-class) > opus > sonnet > haiku.
+// Pořadí rozhoduje — mythos se musí testovat před ostatními, ať se
+// "claude-mythos-5" netrefí do generického fallbacku.
+const MODEL_FAMILIES = ['fable', 'mythos', 'opus', 'sonnet', 'haiku'];
+
 function shortModel(m) {
   if (!m) return '';
   const s = String(m).toLowerCase();
-  if (s.includes('opus')) return 'opus' + versionFrag(s);
-  if (s.includes('sonnet')) return 'sonnet' + versionFrag(s);
-  if (s.includes('haiku')) return 'haiku' + versionFrag(s);
+  for (const fam of MODEL_FAMILIES) {
+    if (s.includes(fam)) return fam + versionFrag(s);
+  }
   return m;
 }
 function versionFrag(s) {
-  const m = s.match(/(\d+[.-]\d+)/);
+  // Musí zvládnout obojí: "4-8"/"4.8" i jednociferné "5" (Claude 5 rodina).
+  // Původní /(\d+[.-]\d+)/ vyžadoval dvě čísla → "Opus 5" spadlo na prázdno.
+  // Volitelná druhá skupina taky odřízne datový suffix: "haiku-4-5-20251001" → "4.5".
+  const m = s.match(/(\d+(?:[.-]\d+)?)/);
   return m ? ' ' + m[1].replace('-', '.') : '';
 }
 
@@ -229,7 +237,21 @@ function limitsSegment(data) {
   return { text: `5h ${used}%${pace}${remainingStr}`, color };
 }
 
-function iqSegment(sessionId, mainModel) {
+// Claude 5 éra: effortLevel je reálný knob (low/medium/high/xhigh/max).
+// Default je `high` — ten neukazujeme, jinak by v liště visel pořád a nic neříkal.
+// Signál je odchylka: low/medium = šetříme, xhigh/max = drahý běh.
+const EFFORT_COLORS = { low: 'gray', medium: 'gray', xhigh: 'yellow', max: 'red' };
+
+function effortFrag(level) {
+  if (!level) return '';
+  const l = String(level).toLowerCase();
+  if (l === 'high') return '';
+  const color = EFFORT_COLORS[l];
+  if (!color) return '';
+  return theme.color(' ' + l, color);
+}
+
+function iqSegment(sessionId, mainModel, effortLevel) {
   // Načtení reálně běžících agentů
   let running = [];
   try {
@@ -262,7 +284,7 @@ function iqSegment(sessionId, mainModel) {
   // Vždy ukázat alespoň main:model — řádek se neskrývá, aby user pořád viděl na čem jede.
 
   const sep = theme.color(' │ ', 'gray');
-  const parts = ['main:' + theme.color(main, 'cyan')];
+  const parts = ['main:' + theme.color(main, 'cyan') + effortFrag(effortLevel)];
 
   if (running.length > 0) {
     const grouped = {};

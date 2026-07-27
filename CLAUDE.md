@@ -6,9 +6,17 @@ Effort se reguluje **implicitně přes model a komplexitu promptu**, ne přes
 explicitní tag. Předchozí `<reasoning_effort>` tag byl pseudo-knob (model si
 budget rozdělí sám podle úlohy) — vyhozený.
 
-Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/xhigh) —
-nastavitelný v settings.json nebo interaktivně. Default nech být; xhigh jen
-když to uživatel explicitně chce (dlouhé autonomní běhy, těžké problémy).
+Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/**xhigh**/max)
+— nastavitelný v settings.json nebo interaktivně, upstream default `high`.
+**My máme v `settings.json` napevno `"effortLevel": "xhigh"`**, protože tenhle
+config se používá hlavně na coding. Status lišta ukazuje effort jen když se liší
+od `high` (viz `scripts/statusline.js`), takže `xhigh` v liště uvidíš pořád —
+to je záměr, ne bug. Jednorázově se přepíná přes `/effort`.
+
+- `xhigh` — coding a agentic práce (Claude Code tam má vlastní default)
+- `high` — všechno ostatní intelligence-sensitive
+- `low`/`medium` — na Opus 5 překvapivě silné, primární páka na cenu a latenci
+- `max` — jen když korektnost přebíjí cenu; umí přemýšlet zbytečně dlouho
 
 Šetření probíhá hlavně přes **routing subagentů** (viz *Subagent budget*) a
 **parallel batch mode** (viz níže). Před dispatchem 2+ subagentů invokuj skill
@@ -27,6 +35,7 @@ když to uživatel explicitně chce (dlouhé autonomní běhy, těžké problém
 ## Commit workflow
 - Commit message česky, krátký popis + případný kontext
 - Nepřidávej Co-Authored-By ani jiné patičky — commituj jen pod uživatelovým jménem
+  (vynuceno configem: `attribution: { commit: "", pr: "" }` v `settings.json`)
 
 ## Procesy a instance — DŮLEŽITÉ
 
@@ -35,6 +44,11 @@ když to uživatel explicitně chce (dlouhé autonomní běhy, těžké problém
 - **Před spuštěním aplikace (Electron, dev server, browser) detekuj zda už běží jiná instance.** Pokud ano, zastav a zeptej se — NIKDY nespouštěj druhou ani neshazuj první.
 - **Pro testy/audit:** vždy izolovaná instance — vlastní `--user-data-dir`, vlastní port, vlastní profil. Graceful shutdown přes IPC/`app.quit()`, ne SIGKILL.
 - **Platí zejména pro:** Playwright / Puppeteer / Chromium launches, Electron `_electron.launch`, `spawn` s Electron binary, a jakékoli `taskkill`/`kill -9`.
+
+Obě pravidla jsou navíc v `settings.json` jako `autoMode.soft_deny` — auto mode
+classifier je vyhodnocuje na každém tool callu, takže neprojdou ani když se
+tahle sekce vykompaktuje z kontextu. `soft_deny` (ne `hard_deny`) schválně:
+explicitní záměr („zabij ten hung proces PID 1234") je pořád může přebít.
 
 ## Subagent budget — pro plánované dispatche (zejména SDD)
 
@@ -49,12 +63,28 @@ drahý a často nasadí sonnet na úkoly co zvládne haiku.
 - **`dead-code-scanner`** (haiku) — unused exports/imports/funkce
 - **`architect`** (opus) — design decisions, ADR-style output
 - **main coordinator / orchestrator** (= já, hlavní turn) → **opus** (default;
-  fable si uživatel přepíná ručně přes `/model`, když je dostupný)
+  fable si uživatel přepíná ručně přes `/model`)
 
-**Aliasy modelů (Claude 5 éra):** `haiku` = Haiku 4.5, `sonnet` = Sonnet 5,
-`opus` = Opus 4.8, `fable` = Fable 5 (Mythos-class, nad Opusem). Aliasy se samy
-mapují na nejnovější verze — v agent frontmatteru je nech, nepiš full model ID.
-Fable je jen pro hlavní turn, subagentům ho nedávej (cena).
+**Aliasy modelů (Claude 5 éra).** Aliasy se samy mapují na nejnovější verze —
+v agent frontmatteru je nech, nepiš full model ID.
+
+| Alias    | Model        | Full ID            | Context | $/1M in-out |
+| -------- | ------------ | ------------------ | ------- | ----------- |
+| `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
+| `sonnet` | Sonnet 5     | `claude-sonnet-5`  | 1M      | $3 / $15    |
+| `opus`   | **Opus 5**   | `claude-opus-5`    | 1M      | $5 / $25    |
+| `fable`  | Fable 5      | `claude-fable-5`   | 1M      | $10 / $50   |
+
+Fable 5 je nejsilnější veřejně dostupný model — dvojnásobná cena Opusu, takže
+jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Mythos 5
+(`claude-mythos-5`) je stejný model pro Project Glasswing — nemáme přístup.
+
+Fable pro subagenty je tvrdě zablokovaný přes `permissions.deny` →
+`Agent(model:fable)` v `settings.json`. Deny rule se vyhodnocuje před
+classifierem i před promptem, takže tohle pravidlo nejde obejít omylem.
+
+**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5"]` — když je
+opus přetížený, session spadne na Sonnet 5 místo aby se zasekla.
 
 Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
 
@@ -64,6 +94,40 @@ frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
 **Eskalace:** pokud subagent vrátí `BLOCKED` nebo `NEEDS_CONTEXT`, re-dispatch
 o jednu úroveň výš (haiku → sonnet, sonnet → opus). Opus je strop pro subagenty
 — nikdy ho nestřílej jako default „pro jistotu" a na fable neeskaluj.
+
+**Kdy subagenta NEspouštět.** Opus 5 deleguje ochotněji než 4.8 a každý
+dispatch platí kontext znovu (subagent si ho postaví, zreportuje, já si report
+přečtu). Nedeleguj, když:
+
+- to zvládnu sám pár tool cally — pár readů, hrstka editů, jeden grep
+- jde o review nebo ověření vlastní práce → patří do hlavního loopu, ne
+  do subagenta (od toho je `code-reviewer` až *po* implementaci, ne průběžně)
+- jeden subagent stačí — nedělím jeden malý task mezi víc agentů
+
+Když deleguju, tak delegaci dodržím: nepřepočítávám subagentův výstup a
+nedělám jeho práci znovu. Paralelní dispatch je pro nezávislé tracky
+(viz *Parallel batch mode*, strop 3 tasky/batch), ne pro rozkrájení jedné
+drobnosti.
+
+## Dokumentace projektů → Obsidian
+
+Vault pro dev projekty je `C:\dev\vault` (vault *Domácí server* je oddělený a
+zůstává tematicky sevřený jen na homelab).
+
+Hook `doc-check.js` na SessionStart zjistí, jestli otevřený projekt má poznámku
+v `🚀 Projekty/`. Když ne, injektuje do kontextu pokyn **nabídnout dokumentaci**
+— zeptat se jednou větou, ne psát rovnou. Ptá se jen na `source=startup`, mlčí
+u projektů s vlastním Obsidian vaultem a u složek, které nejsou projekt.
+
+Odpověď se **musí zapsat**, jinak se hook zeptá při každém startu znovu:
+
+```bash
+node ~/.claude/scripts/doc-state.js --skip .           # nechce
+node ~/.claude/scripts/doc-state.js --done . "<nota>"  # hotovo
+```
+
+Psaní poznámky řeší skill `obsidian-docs` — zná konvence vaultu (emoji v
+názvech, frontmatter `tags` + `aktualizovano`, callouty, wikilinky, čeština).
 
 ## Time calibration
 
@@ -87,12 +151,20 @@ Statistiky jsou per-repo. Pokud daný repo nemá ≥3 vzorky, nic se neinjektuje
 **Toto je default chování pro každý plánovaný dispatch s 3+ tasky.** Není
 potřeba čekat na pokyn uživatele — automaticky postav conflict graph a batchuj.
 
+**Subagenti od CC 2.1.195+ běží na pozadí by default.** Hlavní session čeká
+jen na to, co potřebuje — ne na dokončení dispatche. Tím padá původní důvod
+pro tvrdý strop 3 tasků na batch (byl to strop na *blokující* čekání, ne na
+korektnost). Skutečné omezení je konflikt souborů, ne počet.
+
 **Algoritmus (automaticky při invokaci SDD):**
 1. Extract tasks + target files (z plán dokumentu nebo z task description).
 2. Postav conflict graph (hrany mezi tasky sdílející soubor).
-3. Pick max 3 tasky bez konfliktů → **dispatch paralelně v jedné odpovědi**.
+3. Vezmi **všechny vzájemně nekonfliktní tasky** z aktuální vrstvy →
+   dispatch paralelně v jedné odpovědi. Měkký strop ~5; nad to už je režie
+   čtení reportů větší než ušetřený čas a roste riziko, že si tasky vzájemně
+   rozbijí předpoklady.
 4. Per task uvnitř batche: pipeline implementer → spec → quality (sériová).
-5. Mark batch complete, jeď další batch.
+5. Mark batch complete, jeď další vrstvu.
 
 **Sériově jen pokud:** ≤2 tasky v plánu, nebo všechny sdílí jeden soubor, nebo
 uživatel explicitně řekne *"jeď po jednom"*.
@@ -100,6 +172,16 @@ uživatel explicitně řekne *"jeď po jednom"*.
 **Stop conditions:** implementer vrátí `BLOCKED` / `NEEDS_CONTEXT` → ten task
 degraduj na sériový, batch dokonči bez něj. Detail viz
 `subagent-driven-development` skill, sekce *Parallel Batch Mode*.
+
+**Nested dispatch.** Subagent si smí spawnout vlastního subagenta (CC stropuje
+řetěz na 5 úrovní). Nepoužívej to jako default — náš routing je plochý
+záměrně, ať je vidět kdo co platí. Dává to smysl jen když `architect` potřebuje
+rozsáhlý průzkum, který se nevejde do jeho vlastního kontextu.
+
+**Dynamic workflows.** Pro fan-out přes desítky až stovky subagentů existuje
+upstream mechanismus, kde Claude napíše orchestrační skript. To je nadmnožina
+tohohle ručního batchování. Náš conflict-graph postup drž pro plány řádu
+jednotek až desítek tasků; nad to sáhni po workflow.
 
 ---
 
