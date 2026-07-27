@@ -27,7 +27,6 @@ cache/
 # Lokální stav / usage tracking
 # ================================================================
 levis-usage.json
-levis-usage-history.json
 *.log
 *-usage.json
 .last-update-result.json
@@ -63,9 +62,9 @@ skills/trailofbits/
 
 # ================================================================
 # Visual-audit runner — node_modules, install lokálně přes npm i
+# (runner/ byl přejmenován na scripts/, zbytek na disku je mrtvý)
 # ================================================================
-skills/visual-audit/runner/node_modules/
-skills/visual-audit/runner/package-lock.json
+skills/visual-audit/runner/
 skills/visual-audit/scripts/node_modules/
 skills/visual-audit/scripts/.audit/
 .last-cleanup
@@ -91,3 +90,9 @@ levis-usage-history.json
 
 # Sandbox a stav doc-check hooku
 cache/doc-check-state.json
+
+# ================================================================
+# Server-pushed policy / remote config (runtime, per-machine)
+# ================================================================
+policy-limits.json
+remote-settings.json
