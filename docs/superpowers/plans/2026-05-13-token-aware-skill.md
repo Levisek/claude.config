@@ -36,7 +36,7 @@
 ## Task 1: Vytvořit skelet skillu token-aware (frontmatter + rubriky)
 
 **Files:**
-- Create: `C:\Users\levingerm\.claude\skills\token-aware\SKILL.md`
+- Create: `C:\Users\admin\.claude\skills\token-aware\SKILL.md`
 
 - [ ] **Step 1: Vytvořit složku skillu**
 
@@ -163,8 +163,8 @@ git -C ~/.claude commit -m "feat(token-aware): skill pro adaptivní effort + age
 ## Task 2: Upravit CLAUDE.md — snížit reasoning floor + přidat status řádek instrukci
 
 **Files:**
-- Modify: `C:\Users\levingerm\.claude\CLAUDE.md:4` (reasoning_effort)
-- Modify: `C:\Users\levingerm\.claude\CLAUDE.md:30-35` (přidat token-aware skill do seznamu)
+- Modify: `C:\Users\admin\.claude\CLAUDE.md:4` (reasoning_effort)
+- Modify: `C:\Users\admin\.claude\CLAUDE.md:30-35` (přidat token-aware skill do seznamu)
 
 - [ ] **Step 1: Změnit `<reasoning_effort>99</reasoning_effort>` na 75**
 
@@ -227,7 +227,7 @@ git -C ~/.claude commit -m "feat(CLAUDE.md): floor reasoning 75 + instrukce stat
 ## Task 3: Smazat `/iq` command (nahrazen přirozeným jazykem)
 
 **Files:**
-- Delete: `C:\Users\levingerm\.claude\commands\iq.md`
+- Delete: `C:\Users\admin\.claude\commands\iq.md`
 
 - [ ] **Step 1: Smazat soubor**
 
@@ -255,7 +255,7 @@ git -C ~/.claude commit -m "chore(commands): smazat /iq, nahrazeno přirozeným 
 ## Task 4: Test pro effort-stats.js (TDD — failing test first)
 
 **Files:**
-- Create: `C:\Users\levingerm\.claude\scripts\effort-stats.test.js`
+- Create: `C:\Users\admin\.claude\scripts\effort-stats.test.js`
 
 - [ ] **Step 1: Vytvořit složku scripts (pokud chybí) a napsat failing test**
 
@@ -320,7 +320,7 @@ Expected: FAIL — `Cannot find module './effort-stats.js'`
 ## Task 5: Implementovat effort-stats.js (make tests pass)
 
 **Files:**
-- Create: `C:\Users\levingerm\.claude\scripts\effort-stats.js`
+- Create: `C:\Users\admin\.claude\scripts\effort-stats.js`
 
 - [ ] **Step 1: Zapsat effort-stats.js s `aggregate()` + CLI wrapper**
 
@@ -440,7 +440,7 @@ git -C ~/.claude commit -m "feat(scripts): effort-stats.js — agregace token-aw
 ## Task 6: .gitignore — runtime log nepatří do gitu
 
 **Files:**
-- Modify: `C:\Users\levingerm\.claude\.gitignore`
+- Modify: `C:\Users\admin\.claude\.gitignore`
 
 - [ ] **Step 1: Mrknout co je v .gitignore aktuálně**
 

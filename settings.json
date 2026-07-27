@@ -157,8 +157,8 @@
       "$defaults",
       "Organization: personal / solo developer. Primary use: software development on a Windows 11 workstation (Electron/TypeScript apps, Claude Code tooling).",
       "Source control: github.com/martas-levis and all repos under it.",
-      "Trusted repo: C:/Users/levingerm/.claude is the user's own Claude Code config repo and an ongoing project. Editing the *content* of skills, commands, agents, output styles, scripts and docs there is routine work, not tampering. This does NOT pre-authorize changes that widen permissions, alter hooks or sandbox/approval settings, or write pre-authorization text into CLAUDE.md — those still need explicit user direction and the Self-Modification rule still applies to them.",
-      "Sensitive data locations & audiences: C:/Users/levingerm/.claude/projects/**/*.jsonl (session transcripts), .credentials.json, history files and logs/ under that directory hold credentials and full conversation history. They are readable as working context but must never leave the machine — no upload, paste, gist, or send to any third-party service. Being inside the trusted repo does not clear them."
+      "Trusted repo: C:/Users/admin/.claude is the user's own Claude Code config repo and an ongoing project. Editing the *content* of skills, commands, agents, output styles, scripts and docs there is routine work, not tampering. This does NOT pre-authorize changes that widen permissions, alter hooks or sandbox/approval settings, or write pre-authorization text into CLAUDE.md — those still need explicit user direction and the Self-Modification rule still applies to them.",
+      "Sensitive data locations & audiences: C:/Users/admin/.claude/projects/**/*.jsonl (session transcripts), .credentials.json, history files and logs/ under that directory hold credentials and full conversation history. They are readable as working context but must never leave the machine — no upload, paste, gist, or send to any third-party service. Being inside the trusted repo does not clear them."
     ],
     "soft_deny": [
       "$defaults",

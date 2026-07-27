@@ -27,17 +27,17 @@ Přes `AskUserQuestion`:
 Podle typu projektu načti (Read) a následuj pokyny z těchto skill souborů:
 
 #### Electron/TypeScript/Node
-1. `C:\Users\levingerm\.claude\skills\trailofbits\plugins\insecure-defaults\skills\insecure-defaults\SKILL.md`
+1. `C:\Users\admin\.claude\skills\trailofbits\plugins\insecure-defaults\skills\insecure-defaults\SKILL.md`
    - Hledej: hardcoded secrets, fail-open defaults (`env.KEY || 'default'`), weak auth, permissive CORS, disabled security
    - Rozliš fail-open (kritické) vs fail-secure (bezpečné)
    - Ignoruj test/spec/example soubory
 
-2. `C:\Users\levingerm\.claude\skills\trailofbits\plugins\supply-chain-risk-auditor\skills\supply-chain-risk-auditor\SKILL.md`
+2. `C:\Users\admin\.claude\skills\trailofbits\plugins\supply-chain-risk-auditor\skills\supply-chain-risk-auditor\SKILL.md`
    - Audit `package.json` závislostí
    - Červené vlajky: unmaintained (>2 roky bez updatu), nízký download count, typosquatting, single-maintainer bez firmy
 
 3. Pokud je nainstalován `semgrep` (ověř `semgrep --version`):
-   - `C:\Users\levingerm\.claude\skills\trailofbits\plugins\static-analysis\skills\semgrep\SKILL.md`
+   - `C:\Users\admin\.claude\skills\trailofbits\plugins\static-analysis\skills\semgrep\SKILL.md`
    - Spusť Semgrep s `--metrics=off` a relevantními rulesety (p/typescript, p/javascript, p/nodejs-scan)
    - **DŮLEŽITÉ:** před spuštěním získej od uživatele explicit approval scan planu
 
