@@ -26,11 +26,11 @@
       "Edit(**/credentials*)",
       "Agent(model:fable)"
     ],
-    "defaultMode": "auto"
+    "defaultMode": "bypassPermissions"
   },
   "model": "opus",
   "effortLevel": "xhigh",
-  "fallbackModel": ["claude-sonnet-5"],
+  "fallbackModel": ["claude-sonnet-5", "claude-haiku-4-5"],
   "attribution": {
     "commit": "",
     "pr": ""

@@ -18,6 +18,15 @@ to je záměr, ne bug. Jednorázově se přepíná přes `/effort`.
 - `low`/`medium` — na Opus 5 překvapivě silné, primární páka na cenu a latenci
 - `max` — jen když korektnost přebíjí cenu; umí přemýšlet zbytečně dlouho
 
+**`max` do `settings.json` nepatří.** Na rozdíl od ostatních úrovní neplatí
+napříč sessions — drží jen tu aktuální, pokud se nenastaví přes
+`CLAUDE_CODE_EFFORT_LEVEL`. Používej ho jednorázově přes `/effort max`.
+
+**`ultracode`** není effort level, ale nastavení Claude Code: pošle modelu
+`xhigh` a navíc zapne orchestraci dynamických workflows. Jen pro aktuální
+session, `settings.json` ani env proměnná ho nepřijmou — zapíná se `/effort
+ultracode` nebo `claude --effort ultracode`.
+
 Šetření probíhá hlavně přes **routing subagentů** (viz *Subagent budget*) a
 **parallel batch mode** (viz níže). Před dispatchem 2+ subagentů invokuj skill
 `token-aware` — vyhodnotí modely a zapíše snapshot pro status panel.
@@ -45,10 +54,20 @@ to je záměr, ne bug. Jednorázově se přepíná přes `/effort`.
 - **Pro testy/audit:** vždy izolovaná instance — vlastní `--user-data-dir`, vlastní port, vlastní profil. Graceful shutdown přes IPC/`app.quit()`, ne SIGKILL.
 - **Platí zejména pro:** Playwright / Puppeteer / Chromium launches, Electron `_electron.launch`, `spawn` s Electron binary, a jakékoli `taskkill`/`kill -9`.
 
-Obě pravidla jsou navíc v `settings.json` jako `autoMode.soft_deny` — auto mode
-classifier je vyhodnocuje na každém tool callu, takže neprojdou ani když se
-tahle sekce vykompaktuje z kontextu. `soft_deny` (ne `hard_deny`) schválně:
-explicitní záměr („zabij ten hung proces PID 1234") je pořád může přebít.
+**Kill-by-name je vynucený hookem**, ne promptem — `hooks/block-destructive.js`
+blokuje `taskkill /IM`, `taskkill /T`, `Stop-Process -Name`,
+`Get-Process | Stop-Process`, `pkill`, `killall`, `kill-port`, `fuser -k`,
+`wmic process delete` a `Invoke-CimMethod Terminate`. Platí i když se tahle
+sekce vykompaktuje z kontextu, a hlavně **i v `bypassPermissions`**, kde se
+`autoMode` vůbec nevyhodnocuje. Testy: `node --test hooks/block-destructive.test.js`.
+
+Rozhoduje **selektor, ne signál**: adresný numerický PID (`taskkill /PID 1234`,
+`Stop-Process -Id 1234`) projde, protože nemůže sáhnout na cizí okno. `/T`
+neprojde ani s PID — zabíjí celý strom potomků.
+
+`autoMode.soft_deny` v `settings.json` ta samá pravidla popisuje taky, ale
+v bypass režimu je mrtvé — leží tam připravené, kdyby se `defaultMode` někdy
+přepnul na `auto`. Nespoléhej na něj, spoléhej na hook.
 
 ## Subagent budget — pro plánované dispatche (zejména SDD)
 
@@ -111,8 +130,22 @@ drobnosti.
 
 ## Dokumentace projektů → Obsidian
 
-Vault pro dev projekty je `C:\dev\vault` (vault *Domácí server* je oddělený a
-zůstává tematicky sevřený jen na homelab).
+**Vaulty jsou dva a nemíchají se** — pracovní stroj nesmí dostat osobní
+poznámky. O tom, který se použije, rozhoduje umístění projektu na disku:
+
+| Projekt leží           | scope      | vault                   | env override                   |
+| ---------------------- | ---------- | ----------------------- | ------------------------------ |
+| pod `C:\dev\Work\`     | `work`     | `C:\dev\Work\Obsidian`  | `CLAUDE_OBSIDIAN_VAULT_WORK`   |
+| kdekoli jinde          | `personal` | `C:\dev\vault`          | `CLAUDE_OBSIDIAN_VAULT`        |
+
+Kořen pracovních projektů se dá přepsat přes `CLAUDE_WORK_ROOT`. Vault *Domácí
+server* je oddělený a zůstává tematicky sevřený jen na homelab.
+
+**Osobní projekt otevřený na pracovním stroji** (osobní vault není po ruce) se
+nedokumentuje — místo toho vznikne v repu `.claude/doc-pending.md` s kontextem
+projektu. Ten se commitne, doma se pullne a `doc-check` tam nabídne dokumentaci
+sám. Handoff jde přes git, ne přes sdílený disk. Marker vzniká jen jednou;
+po zapsání poznámky ho `doc-state.js --done` smaže.
 
 Hook `doc-check.js` na SessionStart zjistí, jestli otevřený projekt má poznámku
 v `🚀 Projekty/`. Když ne, injektuje do kontextu pokyn **nabídnout dokumentaci**
@@ -123,7 +156,9 @@ Odpověď se **musí zapsat**, jinak se hook zeptá při každém startu znovu:
 
 ```bash
 node ~/.claude/scripts/doc-state.js --skip .           # nechce
-node ~/.claude/scripts/doc-state.js --done . "<nota>"  # hotovo
+node ~/.claude/scripts/doc-state.js --done . "<nota>"  # hotovo (smaže i marker)
+node ~/.claude/scripts/doc-state.js --defer .          # odlož, zapíšu doma
+node ~/.claude/scripts/doc-state.js --status .         # scope, vault, stav
 ```
 
 Psaní poznámky řeší skill `obsidian-docs` — zná konvence vaultu (emoji v

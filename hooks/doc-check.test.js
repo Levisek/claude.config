@@ -1,6 +1,10 @@
 // Testy doc-check hooku. Hook se řídí stdin JSONem a stavem na disku, takže
 // se testuje end-to-end přes execFileSync — ne extrakcí funkcí ze zdrojáku.
 // (Extrakce regexem tady už jednou selhala na CRLF; tudy ne.)
+//
+// Pouštěj sériově: `node --test --test-concurrency=1 hooks/*.test.js`.
+// Testy hooků sdílejí stav pod ~/.claude (cache, session-log), takže při
+// paralelním běhu si navzájem přepisují půdu pod nohama.
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -52,6 +56,14 @@ function tmpVault(name) {
   return path.join(SANDBOX, 'vault-' + name + '-' + Date.now());
 }
 
+// Vault, který existuje. Většina testů ho potřebuje: bez něj se osobní projekt
+// vydá větví „odlož do repa" a netestuje se nabídka dokumentace.
+function tmpVaultReal(name) {
+  const dir = tmpVault(name);
+  fs.mkdirSync(path.join(dir, '🚀 Projekty'), { recursive: true });
+  return dir;
+}
+
 function cleanupSandbox() {
   try {
     fs.rmSync(SANDBOX, { recursive: true, force: true });
@@ -79,24 +91,24 @@ test('doc-check', async t => {
   };
 
   withCleanState(() => {
-    const emptyVault = tmpVault('none');
+    const vault = tmpVaultReal('offer');
 
     // Projekt s package.json a bez poznámky → hook musí promluvit.
     const proj = tmpProject('real', {
       'package.json': JSON.stringify({ name: 'testovaci-projekt', dependencies: {} }),
     });
-    const out = runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: emptyVault });
+    const out = runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: vault });
     check('projekt bez poznámky → nabídne dokumentaci', out.includes('additionalContext'));
     const parsed = JSON.parse(out);
     const ctx = parsed.hookSpecificOutput.additionalContext;
     check('kontext nese jméno projektu', ctx.includes('testovaci-projekt'));
-    check('kontext hlásí chybějící vault', ctx.includes('zatím neexistuje'));
+    check('kontext hlásí scope', ctx.includes('(personal)'));
     check('kontext hlásí, že v repu není dokumentace', ctx.includes('žádná'));
     check('kontext odkazuje na skill obsidian-docs', ctx.includes('obsidian-docs'));
   });
 
   withCleanState(() => {
-    const emptyVault = tmpVault('none2');
+    const vault = tmpVaultReal('withdocs');
 
     // README v repu se má propsat do kontextu jako podklad.
     const proj = tmpProject('withdocs', {
@@ -104,10 +116,66 @@ test('doc-check', async t => {
       'README.md': '# Projekt\n\nNějaký popis, který má nenulovou velikost.\n',
     });
     const ctx = JSON.parse(
-      runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: emptyVault })
+      runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: vault })
     ).hookSpecificOutput.additionalContext;
     check('README se propíše do kontextu', ctx.includes('README.md'));
     check('nabídne převod existující dokumentace', ctx.includes('převést existující'));
+  });
+
+  withCleanState(() => {
+    // Pracovní projekt (leží pod WORK_ROOT) míří do pracovního vaultu, i když
+    // ten osobní zrovna existuje. Vaulty se nesmí prolnout.
+    const workVault = tmpVault('work-missing');
+    const personalVault = tmpVaultReal('personal-present');
+    const proj = tmpProject('worky', { 'package.json': '{"name":"pracovni"}' });
+
+    const ctx = JSON.parse(
+      runHook(
+        { source: 'startup', cwd: proj },
+        {
+          CLAUDE_WORK_ROOT: SANDBOX,
+          CLAUDE_OBSIDIAN_VAULT_WORK: workVault,
+          CLAUDE_OBSIDIAN_VAULT: personalVault,
+        }
+      )
+    ).hookSpecificOutput.additionalContext;
+    check('pracovní projekt hlásí scope work', ctx.includes('(work)'));
+    check('pracovní projekt míří do pracovního vaultu', ctx.includes(path.basename(workVault)));
+    check('chybějící vault se ohlásí', ctx.includes('zatím neexistuje'));
+    check('osobní vault se nepoužije', !ctx.includes(path.basename(personalVault)));
+  });
+
+  withCleanState(() => {
+    // Osobní projekt na stroji bez osobního vaultu → poznámka se nepíše,
+    // odloží se do repa. Tohle je celý smysl work/personal splitu.
+    const missing = tmpVault('missing');
+    const proj = tmpProject('deferred', { 'package.json': '{"name":"osobni-projekt"}' });
+    const marker = path.join(proj, '.claude', 'doc-pending.md');
+
+    const ctx = JSON.parse(
+      runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: missing })
+    ).hookSpecificOutput.additionalContext;
+    check('odložení se ohlásí', ctx.includes('odložena'));
+    check('marker v repu vznikne', fs.existsSync(marker));
+
+    const body = fs.readFileSync(marker, 'utf8');
+    check('marker má frontmatter', body.startsWith('---\ndoc-pending: true'));
+    check('marker nese jméno projektu', body.includes('osobni-projekt'));
+
+    // Podruhé už nemá co dodat — marker leží v repu, hook drží hubu.
+    check(
+      'podruhé → ticho (nespamuje každý start)',
+      runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: missing }) === ''
+    );
+
+    // Doma: osobní vault je po ruce a marker z práce čeká na zpracování.
+    const homeVault = tmpVaultReal('home');
+    const homeCtx = JSON.parse(
+      runHook({ source: 'startup', cwd: proj }, { CLAUDE_OBSIDIAN_VAULT: homeVault })
+    ).hookSpecificOutput.additionalContext;
+    check('doma se odložený marker připomene', homeCtx.includes('odložený z jiného stroje'));
+    check('doma se odkáže na obsah markeru', homeCtx.includes('doc-pending.md'));
+    check('doma se nabídne zápis', homeCtx.includes('obsidian-docs'));
   });
 
   withCleanState(() => {
@@ -160,12 +228,13 @@ test('doc-check', async t => {
     );
 
     // README.md nesmí projít dvakrát kvůli case-insensitive FS na Windows.
+    const dupVault = tmpVaultReal('dup');
     const dup = tmpProject('dup', {
       'package.json': '{"name":"dedup"}',
       'README.md': '# Něco\n',
     });
     const ctxDup = JSON.parse(
-      runHook({ source: 'startup', cwd: dup }, { CLAUDE_OBSIDIAN_VAULT: emptyVault })
+      runHook({ source: 'startup', cwd: dup }, { CLAUDE_OBSIDIAN_VAULT: dupVault })
     ).hookSpecificOutput.additionalContext;
     check('README se v seznamu objeví jen jednou', (ctxDup.match(/README\.md/gi) || []).length === 1);
   });

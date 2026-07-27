@@ -16,6 +16,55 @@ process.stdin.on('end', () => {
   const cmd = (data?.tool_input?.command || '').toLowerCase();
   if (!cmd) process.exit(0);
 
+  function block(why, hint) {
+    const g = theme.glyphs();
+    // Dlouhý příkaz roztáhne box přes celý terminál — pro výpis stačí začátek.
+    const raw = String(data?.tool_input?.command || '');
+    const shown = raw.length > 120 ? raw.slice(0, 117) + '…' : raw;
+    const box = theme.box({
+      title: `${g.shield} BLOKOVÁNO · ${why}`,
+      lines: [
+        `Claude se pokusil spustit destruktivní příkaz.`,
+        ``,
+        `${theme.color('Příkaz:', 'dim')} ${shown}`,
+        ``,
+        ...(hint ? [...hint, ``] : []),
+        `${g.arrow} Pokud to opravdu chceš, spusť to ručně`,
+        `  v samostatném terminálu mimo Claude.`,
+        ``,
+        `${theme.color('Pravidlo:', 'dim')} ~/.claude/hooks/block-destructive.js`,
+      ],
+      color: 'red',
+    });
+    process.stderr.write(box + '\n');
+    process.exit(2);
+  }
+
+  // Kill podle jména, vzoru nebo portu. Pravidlo z incidentu 2026-04-14:
+  // zabití Electronu podle image name shodilo uživateli otevřený Chrome —
+  // Chromium/Electron sdílejí GPU a utility procesy napříč instancemi, takže
+  // selektor podle jména sáhne i na okna, o kterých nikdo nemluvil.
+  // Adresný numerický PID projde; škodí selektor, ne signál.
+  const killRules = [
+    { re: /\btaskkill\b[\s\S]*\s\/t\b/, why: 'taskkill /T (zabíjí i strom potomků)' },
+    { re: /\btaskkill\b[\s\S]*\s\/im\b/, why: 'taskkill /IM (výběr podle jména)' },
+    { re: /\bstop-process\b[\s\S]*-name\b/, why: 'Stop-Process -Name' },
+    { re: /\bget-process\b[\s\S]*\|\s*stop-process/, why: 'Get-Process | Stop-Process' },
+    { re: /\b(pkill|killall)\b/, why: 'pkill / killall (výběr podle jména)' },
+    { re: /\bkill-port\b/, why: 'kill-port (výběr podle portu)' },
+    { re: /\bfuser\s+-[a-z]*k/, why: 'fuser -k (výběr podle portu/souboru)' },
+    { re: /\bwmic\s+process\b[\s\S]*\bdelete\b/, why: 'wmic process delete' },
+    { re: /invoke-cimmethod\b[\s\S]*-methodname\s+terminate/, why: 'Invoke-CimMethod Terminate' },
+  ];
+  for (const { re, why } of killRules) {
+    if (re.test(cmd)) {
+      block(why, [
+        `${theme.color('Místo toho:', 'dim')} zabij konkrétní PID podle čísla,`,
+        `  nebo ukonči aplikaci přes IPC / app.quit().`,
+      ]);
+    }
+  }
+
   const patterns = [
     { re: /\brm\s+-[a-z]*r[a-z]*f?\s+\/(\s|$)/, why: 'rm -rf /' },
     { re: /\brm\s+-[a-z]*r[a-z]*f?\s+\/\*/, why: 'rm -rf /*' },
@@ -39,25 +88,7 @@ process.stdin.on('end', () => {
   ];
 
   for (const { re, why } of patterns) {
-    if (re.test(cmd)) {
-      const g = theme.glyphs();
-      const box = theme.box({
-        title: `${g.shield} BLOKOVÁNO · ${why}`,
-        lines: [
-          `Claude se pokusil spustit destruktivní příkaz.`,
-          ``,
-          `${theme.color('Příkaz:', 'dim')} ${data.tool_input.command}`,
-          ``,
-          `${g.arrow} Pokud to opravdu chceš, spusť to ručně`,
-          `  v samostatném terminálu mimo Claude.`,
-          ``,
-          `${theme.color('Pravidlo:', 'dim')} ~/.claude/hooks/block-destructive.js`,
-        ],
-        color: 'red',
-      });
-      process.stderr.write(box + '\n');
-      process.exit(2);
-    }
+    if (re.test(cmd)) block(why);
   }
   process.exit(0);
 });

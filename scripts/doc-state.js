@@ -4,6 +4,7 @@
 //
 //   node scripts/doc-state.js --skip [cesta]        uživatel nechce
 //   node scripts/doc-state.js --done [cesta] [nota] poznámka hotová
+//   node scripts/doc-state.js --defer [cesta]       odlož do repa (zapiš doma)
 //   node scripts/doc-state.js --clear [cesta]       zapomeň, ptej se zas
 //   node scripts/doc-state.js --status [cesta]      co je zapsané
 //
@@ -18,7 +19,8 @@ const vault = require(path.join(os.homedir(), '.claude', 'lib', 'obsidian-vault.
 
 const USAGE = `Použití:
   doc-state.js --skip   [cesta]         uživatel dokumentaci nechce
-  doc-state.js --done   [cesta] [nota]  poznámka ve vaultu hotová
+  doc-state.js --done   [cesta] [nota]  poznámka ve vaultu hotová (smaže i marker)
+  doc-state.js --defer  [cesta]         odlož do repa — zapíše se na stroji s osobním vaultem
   doc-state.js --clear  [cesta]         smaž zápis, hook se zeptá znovu
   doc-state.js --status [cesta]         vypiš stav`;
 
@@ -37,7 +39,7 @@ function resolveRoot(p) {
 
 function main(argv) {
   const cmd = argv[0];
-  if (!cmd || !['--skip', '--done', '--clear', '--status'].includes(cmd)) {
+  if (!cmd || !['--skip', '--done', '--defer', '--clear', '--status'].includes(cmd)) {
     console.error(USAGE);
     return 1;
   }
@@ -52,7 +54,22 @@ function main(argv) {
     case '--done': {
       const note = argv[2] || null;
       vault.setStatus(root, 'documented', note ? { note } : {});
+      // Poznámka je ve vaultu → odložený marker už nemá co dělat v repu.
+      const hadPending = vault.clearPending(root);
       console.log(`OK — ${root}: zdokumentováno${note ? ` (${note})` : ''}.`);
+      if (hadPending) console.log(`     smazán i ${vault.PENDING_REL} — nezapomeň to commitnout.`);
+      return 0;
+    }
+    case '--defer': {
+      const { projectInfo } = require(path.join(os.homedir(), '.claude', 'lib', 'project-info.js'));
+      const proj = projectInfo(root);
+      const p = vault.writePending(root, { name: proj.name, type: proj.type, language: proj.language });
+      if (!p) {
+        console.error(`CHYBA — ${root}: marker se nepodařilo zapsat.`);
+        return 1;
+      }
+      console.log(`OK — ${root}: odloženo do ${vault.PENDING_REL}.`);
+      console.log(`     Commitni to; na stroji s osobním vaultem (${vault.PERSONAL_VAULT}) se dokumentace nabídne po pullu.`);
       return 0;
     }
     case '--clear':
@@ -61,7 +78,12 @@ function main(argv) {
       return 0;
     case '--status': {
       const s = vault.getStatus(root);
-      console.log(s ? `${root}: ${s.status} (${s.ts})${s.note ? `\n  ${s.note}` : ''}` : `${root}: nic zapsáno`);
+      const scope = vault.projectScope(root);
+      console.log(`${root}`);
+      console.log(`  scope:  ${scope}`);
+      console.log(`  vault:  ${vault.vaultPath(root)}${vault.vaultExists(root) ? '' : ' (neexistuje)'}`);
+      console.log(`  stav:   ${s ? `${s.status} (${s.ts})${s.note ? ` — ${s.note}` : ''}` : 'nic zapsáno'}`);
+      if (vault.readPending(root)) console.log(`  odloženo: ${vault.PENDING_REL} čeká na zápis`);
       return 0;
     }
   }

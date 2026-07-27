@@ -22,7 +22,9 @@ function isSkippablePath(dir) {
   const p = path.resolve(dir).toLowerCase();
   const home = path.resolve(os.homedir()).toLowerCase();
   if (p === home) return true;
-  if (p === path.resolve(vault.vaultPath()).toLowerCase()) return true;
+  for (const v of vault.allVaults()) {
+    if (p === path.resolve(v).toLowerCase()) return true;
+  }
   return /[\\/](appdata|temp|tmp|node_modules|\.git|scratchpad|downloads)([\\/]|$)/.test(p);
 }
 
@@ -113,9 +115,13 @@ process.stdin.on('end', () => {
   const status = vault.getStatus(root);
   if (status) return;
 
+  const scope = vault.projectScope(root);
+  const haveVault = vault.vaultExists(root);
+  const pending = vault.readPending(root);
+
   // Poznámka existuje → projekt je zdokumentovaný, jen si to poznač do stavu,
   // ať se příště nemusí prohledávat vault.
-  const note = vault.findNote(proj.name);
+  const note = haveVault ? vault.findNote(proj.name, root) : null;
   if (note) {
     vault.setStatus(root, 'documented', { note });
     return;
@@ -126,13 +132,49 @@ process.stdin.on('end', () => {
     ? docs.map(d => (d.bytes ? `${d.file} (${d.bytes} B)` : d.file)).join(', ')
     : 'žádná';
 
+  // Osobní projekt na stroji bez osobního vaultu (typicky: sedím v práci).
+  // Poznámku sem psát nemůžu, tak ji odložím do repa a jdu z cesty. Marker
+  // se vytvoří jen jednou — podruhé už tu nemám co dělat.
+  if (scope === 'personal' && !haveVault) {
+    if (pending) return;
+    const written = vault.writePending(root, {
+      name: proj.name,
+      type: proj.type,
+      language: proj.language,
+      machine: 'work',
+      docs: docs.map(d => d.file),
+    });
+    if (!written) return;
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SessionStart',
+          additionalContext: [
+            '',
+            `> [!note] Dokumentace projektu odložena do \`${vault.PENDING_REL}\``,
+            `> Osobní projekt, ale osobní vault (\`${vault.PERSONAL_VAULT}\`) na tomhle stroji není.`,
+            '> Marker je v repu — po commitu a pullu na domácím stroji se dokumentace nabídne sama.',
+            '',
+            'Uživateli to **jednou větou zmiň až na konci session** (ať ten soubor commitne),',
+            'jinak se tím nezabývej a řeš, s čím přišel.',
+            '',
+          ].join('\n'),
+        },
+      })
+    );
+    return;
+  }
+
   const lines = [
     '',
-    '> [!question] Tenhle projekt nemá poznámku v Obsidian vaultu',
+    pending
+      ? '> [!question] Tenhle projekt čeká na zápis do vaultu (odložený z jiného stroje)'
+      : '> [!question] Tenhle projekt nemá poznámku v Obsidian vaultu',
     `> **Projekt:** ${proj.name}${proj.type !== 'none' ? ` — ${proj.type} / ${proj.language}` : ''}`,
     `> **Kořen:** \`${root}\``,
     `> **Dokumentace v repu:** ${docsLine}`,
-    `> **Vault:** \`${vault.vaultPath()}\`${vault.vaultExists() ? '' : ' *(zatím neexistuje — je potřeba založit)*'}`,
+    `> **Vault:** \`${vault.vaultPath(root)}\` (${scope})${haveVault ? '' : ' *(zatím neexistuje — je potřeba založit)*'}`,
+    pending ? `> **Odložený marker:** \`${vault.PENDING_REL}\` — přečti si ho, je v něm kontext z původního stroje.` : null,
     '',
     'V **prvním tahu** se uživatele zeptej (česky, jednou větou), jestli chce projekt',
     'zdokumentovat do Obsidianu. Neptej se, pokud uživatel v téhle session rovnou',
@@ -143,9 +185,12 @@ process.stdin.on('end', () => {
     docs.length
       ? '- Nabídni obojí: převést existující dokumentaci do vaultu, nebo napsat poznámku od nuly.'
       : '- V repu není z čeho vyjít, poznámka se bude psát z průzkumu kódu.',
+    pending
+      ? '- Po zapsání spusť `node ~/.claude/scripts/doc-state.js --done .` — smaže i odložený marker.'
+      : null,
     '- **Ne / teď ne** → spusť `node ~/.claude/scripts/doc-state.js --skip .` a víc to neotvírej.',
     '',
-  ];
+  ].filter(l => l !== null);
 
   process.stdout.write(
     JSON.stringify({

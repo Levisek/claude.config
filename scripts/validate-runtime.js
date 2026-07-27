@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execFileSync } = require('child_process');
 
 const HOME = os.homedir();
 const CLAUDE_DIR = path.join(HOME, '.claude');
@@ -132,6 +133,21 @@ const checks = [
     },
     optional: true,
   },
+  {
+    name: 'doc-check (SessionStart Obsidian)',
+    mtime: () => {
+      const f = path.join(CLAUDE_DIR, 'cache', 'doc-check-state.json');
+      return fs.existsSync(f) ? fs.statSync(f).mtimeMs : null;
+    },
+    optional: true, // píše se jen když se u projektu něco rozhodne
+    hook: 'doc-check.js',
+  },
+  {
+    name: 'context-watch (UserPromptSubmit)',
+    mtime: () => newestMtime(path.join(CLAUDE_DIR, 'cache'), 'context-warned-', '.json'),
+    optional: true, // flag vzniká až při varování o kontextu
+    hook: 'context-watch.js',
+  },
 ];
 
 console.log('# Runtime validation report\n');
@@ -144,6 +160,63 @@ for (const c of checks) {
   const { badge, detail } = statusReport(mtime, c.optional, c.windowH || 24);
   console.log(`  ${badge} ${c.name.padEnd(45)} — ${detail}`);
   if (badge === '❌') failures++;
+}
+
+// Guard hooky nic nezapisují — když nic nezablokují, nezanechají stopu. Jediné,
+// co jde ověřit, je že soubor existuje a je spustitelný.
+console.log('\n## Guard hooks (bez artefaktu — kontroluje se jen spustitelnost)');
+for (const g of ['block-destructive.js', 'block-protected.js']) {
+  const f = path.join(CLAUDE_DIR, 'hooks', g);
+  if (!fs.existsSync(f)) {
+    console.log(`  ❌ ${g.padEnd(24)} — soubor chybí`);
+    failures++;
+    continue;
+  }
+  try {
+    execFileSync(process.execPath, ['--check', f], { stdio: 'ignore' });
+    console.log(`  ✅ ${g.padEnd(24)} — přítomen, syntax OK`);
+  } catch {
+    console.log(`  ❌ ${g.padEnd(24)} — syntaktická chyba, hook by spadl`);
+    failures++;
+  }
+}
+
+// Coverage: každý hook ze settings.json musí mít výše svůj check. Bez tohohle
+// se stane, že se do configu přidá hook, validate o něm mlčí a report hlásí
+// „healthy" o setupu, který zná jen z poloviny.
+console.log('\n## Coverage (settings.json → checks)');
+const covered = new Set();
+for (const c of checks) {
+  if (c.hook) covered.add(c.hook);
+  const m = /([a-z0-9-]+\.js)/i.exec(c.name);
+  if (m) covered.add(m[1]);
+  covered.add(c.name.split(' ')[0] + '.js');
+}
+let configured = [];
+try {
+  const st = JSON.parse(fs.readFileSync(path.join(CLAUDE_DIR, 'settings.json'), 'utf8'));
+  for (const arr of Object.values(st.hooks || {})) {
+    for (const matcher of arr) {
+      for (const h of matcher.hooks || []) {
+        const m = /hooks[\\/]([a-z0-9-]+\.js)/i.exec(h.command || '');
+        if (m) configured.push(m[1]);
+      }
+    }
+  }
+} catch {
+  console.log('  ⚠️  settings.json se nepodařilo přečíst — coverage přeskočena');
+}
+configured = [...new Set(configured)];
+const guards = ['block-destructive.js', 'block-protected.js'];
+const uncovered = configured.filter(h => !covered.has(h) && !guards.includes(h));
+if (configured.length === 0) {
+  // nic
+} else if (uncovered.length === 0) {
+  console.log(`  ✅ všech ${configured.length} hooků ze settings.json má kontrolu`);
+} else {
+  console.log(`  ❌ ${uncovered.length} hook(ů) v settings.json bez kontroly: ${uncovered.join(', ')}`);
+  console.log('     Doplň je do `checks` v tomhle skriptu, jinak report lže o zdraví setupu.');
+  failures++;
 }
 
 // Pre-bind agents readiness
