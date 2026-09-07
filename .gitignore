@@ -103,3 +103,5 @@ remote-settings.json
 CLAUDE.stroj.md
 settings.local.json
 chrome/
+# stav Claude Code pro tenhle stroj (historie projektu, ucet)
+.claude.json
