@@ -96,3 +96,10 @@ cache/doc-check-state.json
 # ================================================================
 policy-limits.json
 remote-settings.json
+
+# ================================================================
+# Per-machine — kazdy stroj ma svoje, nesmi se sdilet
+# ================================================================
+CLAUDE.stroj.md
+settings.local.json
+chrome/

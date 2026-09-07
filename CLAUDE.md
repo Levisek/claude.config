@@ -234,3 +234,13 @@ Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
 - **i18n texty** (nehardcoduj) → skill `i18n-texts`
 - **Design tokens** (žádné hardcoded hodnoty) → skill `design-tokens`
 - **TSC verifikace po změně** → skill `tsc-verification`
+
+---
+
+## Pravidla toho stroje
+
+Co platí jen tady (jiný operační systém, jiné cesty, jiná rizika) leží vedle
+v `CLAUDE.stroj.md`. Ten soubor **není v gitu** — každý stroj má svůj.
+Díky tomu je zbytek tohohle souboru společný a nemusí se větvit.
+
+@CLAUDE.stroj.md

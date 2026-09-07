@@ -52,6 +52,11 @@ process.stdin.on('end', () => {
   } catch {}
 
   if (innerCmd) {
+    // `$HOME` a `~` rozbalíme sami. Vnitřní příkaz se pouští přes `shell:true`,
+    // což je na Windows cmd.exe — ten `$HOME` nezná a cesta by zůstala doslova.
+    // Díky tomu může být `levis-wrapper.json` v gitu stejný pro všechny stroje.
+    const domov = os.homedir();
+    innerCmd = innerCmd.replace(/\$HOME\b/g, () => domov).replace(/^~(?=[\/\\])/, () => domov);
     try {
       const r = spawnSync(innerCmd, { input, shell: true, encoding: 'utf8', timeout: 5000 });
       if (r.stdout) process.stdout.write(r.stdout);
