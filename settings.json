@@ -149,8 +149,15 @@
   },
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
-  "tui": "fullscreen",
+  "tui": "default",
   "timeZone": "Europe/Prague",
+  "fileCheckpointingEnabled": true,
+  "precomputeCompactionEnabled": true,
+  "showMessageTimestamps": true,
+  "inputNeededNotifEnabled": true,
+  "worktree": {
+    "symlinkDirectories": ["node_modules"]
+  },
   "skipDangerousModePermissionPrompt": true,
   "claudeMdExcludes": [
     "**/node_modules/**/CLAUDE.md",
