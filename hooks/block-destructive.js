@@ -13,7 +13,12 @@ process.stdin.on('end', () => {
   let data;
   try { data = JSON.parse(input); } catch { process.exit(0); }
 
-  const cmd = (data?.tool_input?.command || '').toLowerCase();
+  // Vetsina pravidel se porovnava na malych pismenech - PowerShell ani cmd
+  // velikost nerozlisuji, `REMOVE-ITEM` je totez co `remove-item`. U gitu to
+  // ale neplati: `-D` maze vetev natvrdo, `-d` odmitne tu, ktera neni slita.
+  // Proto se drzi oboji a pravidlo si rekne, co potrebuje.
+  const puvodni = String(data?.tool_input?.command || '');
+  const cmd = puvodni.toLowerCase();
   if (!cmd) process.exit(0);
 
   function block(why, hint) {
@@ -54,12 +59,12 @@ process.stdin.on('end', () => {
   // Zbývající mez: řádek uvnitř heredocu, který destruktivním tvarem začíná,
   // se pořád zablokuje. U hooku, který má chránit před omylem, je to správná
   // strana omylu.
-  const OBALOVACE = /^(?:sudo|doas|env|nohup|time|command|exec|xargs|npx|bunx)$/;
-  const PRIRAZENI = /^[a-z_][a-z0-9_]*=/;
-  const PREPINAC = /^-{1,2}[a-z0-9-]+$/;
+  const OBALOVACE = /^(?:sudo|doas|env|nohup|time|command|exec|xargs|npx|bunx)$/i;
+  const PRIRAZENI = /^[a-z_][a-z0-9_]*=/i;
+  const PREPINAC = /^-{1,2}[a-z0-9-]+$/i;
   // Hlavy hlídaných příkazů. Slouží jen k tomu, aby se `sudo -u rm` nespletlo
   // s hodnotou přepínače a `rm` se nesnědlo jako argument `-u`.
-  const HLAVY = /^(rm|remove-item|del|rd|rmdir|git|mkfs|dd|chmod|format|taskkill|stop-process|get-process|pkill|killall|kill-port|fuser|wmic|invoke-cimmethod)$/;
+  const HLAVY = /^(rm|remove-item|del|rd|rmdir|git|mkfs|dd|chmod|format|taskkill|stop-process|get-process|pkill|killall|kill-port|fuser|wmic|invoke-cimmethod)$/i;
 
   /**
    * Zahodí z úseku to, co příkaz jen spouští, a vrátí zbytek od jeho hlavy.
@@ -85,14 +90,20 @@ process.stdin.on('end', () => {
   }
 
   // Nedělí se na `{}` — rozseklo by to `${HOME}` a `rm -rf ${HOME}` by prošlo.
-  const useky = cmd
-    .split(/[\n;|&()]+/)
-    .map(kus => odstranObalovace(kus.trim()))
-    .filter(Boolean);
+  function naUseky(text) {
+    return text
+      .split(/[\n;|&()]+/)
+      .map(kus => odstranObalovace(kus.trim()))
+      .filter(Boolean);
+  }
+  const useky = naUseky(cmd);
+  const usekyPuvodni = naUseky(puvodni);
 
   /** Vzor v pozici příkazu: kotví se na začátek některého úseku. */
-  function vUseku(re) {
-    return useky.some(u => re.test(u));
+  function vUseku(re, citliveNaVelikost) {
+    // `citliveNaVelikost` porovnava proti puvodnimu zneni - potrebuje to jen
+    // git, kde se `-D` a `-d` lisi vyznamem, ne stylem.
+    return (citliveNaVelikost ? usekyPuvodni : useky).some(u => re.test(u));
   }
 
   // Kill podle jména, vzoru nebo portu. Pravidlo z incidentu 2026-04-14:
@@ -115,8 +126,8 @@ process.stdin.on('end', () => {
     `  nebo ukonči aplikaci přes IPC / app.quit().`,
   ];
 
-  for (const { re, why, kdekoli } of killRules) {
-    if (kdekoli ? re.test(cmd) : vUseku(re)) block(why, RADA_PID);
+  for (const { re, why, kdekoli, citliveNaVelikost } of killRules) {
+    if (kdekoli ? re.test(cmd) : vUseku(re, citliveNaVelikost)) block(why, RADA_PID);
   }
 
   // Roura je oddělovač úseků, takže se tenhle tvar hledá jako dvojice: některý
@@ -159,11 +170,15 @@ process.stdin.on('end', () => {
     { re: /^git\s+reset\s+--hard\s+(head~|origin)/, why: 'git reset --hard' },
     { re: /^git\s+clean\s+-[a-z]*f/, why: 'git clean -f' },
     { re: /^git\s+checkout\s+\./, why: 'git checkout . (discard)' },
-    { re: /^git\s+branch\s+-d\b/i, why: 'git branch -D' },
+    // `-D` maze i neslitou vetev. `-d` je bezpecny protejsek: git ho odmitne,
+    // dokud vetev neni slita - blokovat ho znamenalo branit uklidu.
+    // Chyceno 2026-09-09 pri mazani slite `feat/mobilni-verze`.
+    { re: /^git\s+branch\s+(-D\b|--delete\s+(-f\b|--force\b)|(-f\b|--force\b)\s+--delete\b)/,
+      why: 'git branch -D (maze i neslitou vetev)', citliveNaVelikost: true },
   ];
 
-  for (const { re, why, kdekoli } of patterns) {
-    if (kdekoli ? re.test(cmd) : vUseku(re)) block(why);
+  for (const { re, why, kdekoli, citliveNaVelikost } of patterns) {
+    if (kdekoli ? re.test(cmd) : vUseku(re, citliveNaVelikost)) block(why);
   }
   process.exit(0);
 });

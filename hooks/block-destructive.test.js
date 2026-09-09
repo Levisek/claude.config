@@ -114,3 +114,26 @@ test('obalovače a přiřazení proměnných hook neobejdou', () => {
   assert.strictEqual(blocked('true; rm -rf /'), true, 'za oddělovačem');
   assert.strictEqual(blocked('rm -rf ${HOME}'), true, 'závorky nesmí rozseknout proměnnou');
 });
+
+// 2026-09-09: hook zablokoval úklid slité větve. Příčina nebyla v příznaku `i`
+// u pravidla, ale hlouběji: hook si celý příkaz převádí na malá písmena, takže
+// `-D` a `-d` byly pro něj tentýž řetězec. U PowerShellu je to správně (velikost
+// tam význam nemá), u gitu ne — `-d` je bezpečný protějšek, který git odmítne,
+// dokud větev není slitá.
+test('u mazani vetve rozhoduje velikost pismene', () => {
+  assert.strictEqual(blocked('git branch -D stara-vetev'), true);
+  assert.strictEqual(blocked('git branch --delete --force stara-vetev'), true,
+    'dlouhy zapis je totez');
+  assert.strictEqual(blocked('git branch -f --delete stara-vetev'), true,
+    'na poradi prepinacu nezalezi');
+  assert.strictEqual(blocked('git branch -d slita-vetev'), false,
+    'bezpecny protejsek musi projit, jinak nejde uklizet');
+  assert.strictEqual(blocked('git branch --delete slita-vetev'), false);
+});
+
+// Velikost pismen nesmi jit obejit u vseho ostatniho, kde ji PowerShell ignoruje.
+test('PowerShell zustava necitlivy na velikost', () => {
+  assert.strictEqual(blocked('REMOVE-ITEM -RECURSE -FORCE C:\\dev\\tmp'), true);
+  assert.strictEqual(blocked('Stop-Process -NAME chrome'), true);
+  assert.strictEqual(blocked('SUDO rm -rf /'), true, 'obalovac taky');
+});
