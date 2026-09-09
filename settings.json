@@ -150,6 +150,7 @@
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
+  "timeZone": "Europe/Prague",
   "skipDangerousModePermissionPrompt": true,
   "claudeMdExcludes": [
     "**/node_modules/**/CLAUDE.md",
