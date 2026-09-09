@@ -78,7 +78,14 @@ process.stdin.on('end', () => {
     { re: /:\(\)\s*\{\s*:\|:&\s*\}\s*;\s*:/, why: 'fork bomb' },
     { re: /\bchmod\s+-[a-z]*r[a-z]*\s+777\s+\//, why: 'chmod -R 777 /' },
     { re: /\bformat\s+[a-z]:/i, why: 'format C:' },
-    { re: /remove-item\s+.*-recurse.*-force.*[a-z]:\\/i, why: 'Remove-Item -Recurse -Force' },
+    // Windows: Bash tool tam jede přes PowerShell (nebo cmd), takže bashová
+    // pravidla výš nechytnou nic. Původní podoba vyžadovala `-recurse` PŘED
+    // `-force` a k tomu písmeno disku, takže `Remove-Item -Force -Recurse
+    // ~\projekty` jí v klidu prošlo. Lookaheady jsou na pořadí nezávislé
+    // a cestu neřeší — rekurzivní vynucené mazání je destruktivní všude.
+    { re: /\bremove-item\b(?=[\s\S]*-recurse)(?=[\s\S]*-force)/i, why: 'Remove-Item -Recurse -Force' },
+    { re: /\b(rd|rmdir)\b[\s\S]*\s\/s\b/i, why: 'rd /s (rekurzivní smazání)' },
+    { re: /\bdel\b[\s\S]*\s\/s\b/i, why: 'del /s (rekurzivní smazání)' },
     { re: /\bgit\s+push\s+.*--force(?!-with-lease)\b/, why: 'git push --force' },
     { re: /\bgit\s+push\s+.*-f\b(?!\w)/, why: 'git push -f' },
     { re: /\bgit\s+reset\s+--hard\s+(head~|origin)/, why: 'git reset --hard' },

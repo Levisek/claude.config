@@ -60,3 +60,22 @@ test('původní destruktivní patterny pořád platí', () => {
   assert.strictEqual(blocked('git push --force origin main'), true);
   assert.strictEqual(blocked('git push --force-with-lease'), false);
 });
+
+// Na Windows jede Bash tool přes PowerShell (nebo cmd), takže bashová pravidla
+// tam nechytnou vůbec nic. Staré pravidlo pro Remove-Item vyžadovalo `-recurse`
+// PŘED `-force` a k tomu písmeno disku — obě podmínky se daly minout omylem.
+test('rekurzivní mazání na Windows se blokuje', () => {
+  assert.strictEqual(blocked('Remove-Item -Recurse -Force C:\\dev\\tmp'), true);
+  assert.strictEqual(blocked('Remove-Item -Force -Recurse C:\\dev\\tmp'), true,
+    'pořadí přepínačů nesmí rozhodovat');
+  assert.strictEqual(blocked('Remove-Item -Recurse -Force ~\\projekty'), true,
+    'cesta bez písmene disku je stejně destruktivní');
+  assert.strictEqual(blocked('rd /s /q C:\\dev\\tmp'), true);
+  assert.strictEqual(blocked('del /f /s /q C:\\dev\\*'), true);
+});
+
+test('adresné mazání jednoho souboru projde', () => {
+  assert.strictEqual(blocked('Remove-Item C:\\dev\\soubor.txt'), false);
+  assert.strictEqual(blocked('del C:\\dev\\soubor.txt'), false);
+  assert.strictEqual(blocked('git rm --cached soubor.txt'), false);
+});
