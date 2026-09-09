@@ -151,6 +151,7 @@
   "autoUpdatesChannel": "latest",
   "tui": "default",
   "timeZone": "Europe/Prague",
+  "cleanupPeriodDays": 30,
   "fileCheckpointingEnabled": true,
   "precomputeCompactionEnabled": true,
   "showMessageTimestamps": true,
