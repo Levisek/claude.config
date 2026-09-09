@@ -79,3 +79,38 @@ test('adresné mazání jednoho souboru projde', () => {
   assert.strictEqual(blocked('del C:\\dev\\soubor.txt'), false);
   assert.strictEqual(blocked('git rm --cached soubor.txt'), false);
 });
+
+// 2026-09-09: hook zablokoval zápis TODO, ve kterém byl destruktivní tvar
+// napsaný jako text dokumentace uvnitř heredocu. Rozhoduje pozice — příkaz
+// stojí na začátku, za oddělovačem, nebo za obalovačem typu `sudo`.
+test('věta o příkazu není příkaz', () => {
+  assert.strictEqual(
+    blocked('cat > poznamka.md <<\'MD\'\nDeny list nechytne rekurzivní `Remove-Item -Recurse -Force`.\nMD'),
+    false, 'zmínka v dokumentaci uvnitř heredocu');
+  assert.strictEqual(
+    blocked('echo "rm -rf / smaže celý disk"'), false,
+    'zmínka v uvozovkách');
+  assert.strictEqual(
+    blocked('git commit -m "popsat, proč se nepoužívá git push --force"'), false,
+    'zmínka ve zprávě commitu');
+  // Roura je oddělovač úseků, takže tenhle tvar potřeboval vlastní ošetření —
+  // a hook na něm 2026-09-09 spadl podruhé, při psaní vlastní zprávy commitu.
+  assert.strictEqual(
+    blocked('git commit -m "pravidlo pro Get-Process | Stop-Process ma priznak kdekoli"'),
+    false, 'zmínka o rouře ve zprávě commitu');
+});
+
+test('výběr procesů zakončený ukončením se blokuje i přes filtr', () => {
+  assert.strictEqual(
+    blocked('Get-Process node | Where-Object { $_.CPU -gt 10 } | Stop-Process -Force'),
+    true, 'mezi výběrem a ukončením smí stát filtr');
+});
+
+test('obalovače a přiřazení proměnných hook neobejdou', () => {
+  assert.strictEqual(blocked('sudo rm -rf /'), true);
+  assert.strictEqual(blocked('sudo -u root rm -rf /'), true, 'sudo s přepínačem');
+  assert.strictEqual(blocked('env FOO=bar rm -rf /'), true);
+  assert.strictEqual(blocked('TMPDIR=/x rm -rf /'), true, 'přiřazení před příkazem');
+  assert.strictEqual(blocked('true; rm -rf /'), true, 'za oddělovačem');
+  assert.strictEqual(blocked('rm -rf ${HOME}'), true, 'závorky nesmí rozseknout proměnnou');
+});
