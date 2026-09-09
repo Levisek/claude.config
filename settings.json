@@ -156,7 +156,9 @@
   "showMessageTimestamps": true,
   "inputNeededNotifEnabled": true,
   "worktree": {
-    "symlinkDirectories": ["node_modules"]
+    "symlinkDirectories": [
+      "node_modules"
+    ]
   },
   "skipDangerousModePermissionPrompt": true,
   "claudeMdExcludes": [
