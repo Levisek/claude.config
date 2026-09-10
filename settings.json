@@ -34,10 +34,16 @@
     "defaultMode": "bypassPermissions",
     "additionalDirectories": [
       "/etc",
-      "/var/log",
+      "/var",
       "/run",
       "/proc",
-      "/sys"
+      "/sys",
+      "/usr",
+      "/opt",
+      "/srv",
+      "/boot",
+      "/home/levisek/.local/bin",
+      "/home/levisek/.local/share/claude"
     ]
   },
   "model": "opus",
