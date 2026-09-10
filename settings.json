@@ -26,7 +26,14 @@
       "Edit(**/credentials*)",
       "Agent(model:fable)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/etc",
+      "/var/log",
+      "/run",
+      "/proc",
+      "/sys"
+    ]
   },
   "model": "opus",
   "fallbackModel": [
