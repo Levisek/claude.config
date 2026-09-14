@@ -163,6 +163,25 @@ frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
 o jednu úroveň výš (haiku → sonnet, sonnet → opus). Opus je strop pro subagenty
 — nikdy ho nestřílej jako default „pro jistotu" a na fable neeskaluj.
 
+**Kdy delegovat — tohle je pokyn, ne nabídka.** Bez téhle věty se dispatch
+nestane sám: harness Agent tool nepoužívá, dokud o to nepožádá uživatel,
+CLAUDE.md nebo skill. Routing výš je ceník; tohle je objednávka.
+
+Deleguj, aniž by ses ptal, když úloha spadne do některé třídy:
+
+| úloha | agent | model |
+|---|---|---|
+| mechanická změna v 1–2 souborech podle jasného zadání | `implementer-mech` | haiku |
+| změna přes 3+ souborů, integrace, cross-boundary refactor | `implementer-multi` | sonnet |
+| review hotové implementace (smells, bugy, bezpečnost) | `code-reviewer` | sonnet |
+| ověření, že implementace sedí na zadání | `spec-reviewer` | haiku |
+| nepoužité exporty a importy po refaktoru | `dead-code-scanner` | haiku |
+| návrhové rozhodnutí, kde si předpoklady odporují | `architect` | opus |
+
+Smysl je, že **hlavní turn zůstane na Opusu a práci odvede levnější model.**
+Není to zadarmo — každý dispatch si kontext staví znovu, takže na drobnost
+je delegace dražší než udělat to sám. Proto platí i blok níž.
+
 **Kdy subagenta NEspouštět.** Opus 5 deleguje ochotněji než 4.8 a každý
 dispatch platí kontext znovu (subagent si ho postaví, zreportuje, já si report
 přečtu). Nedeleguj, když:
