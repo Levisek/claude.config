@@ -8,10 +8,15 @@ budget rozdělí sám podle úlohy) — vyhozený.
 
 Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/**xhigh**/max)
 — nastavitelný v settings.json nebo interaktivně, upstream default `high`.
-**My máme v `settings.json` napevno `"effortLevel": "xhigh"`**, protože tenhle
-config se používá hlavně na coding. Status lišta ukazuje effort jen když se liší
-od `high` (viz `scripts/statusline.js`), takže `xhigh` v liště uvidíš pořád —
-to je záměr, ne bug. Jednorázově se přepíná přes `/effort`.
+**V `settings.json` je `"effortLevel": "high"` a `"maxEffortLevel": "xhigh"`**
+(změněno 2026-09-14). `high` je zároveň upstream default; xhigh se bere vědomě
+přes `/effort xhigh` na konkrétní úlohu. Status lišta ukazuje effort jen když se
+liší od `high` (viz `scripts/statusline.js`), takže v ní teď normálně nic není —
+a když tam `xhigh` uvidíš, znamená to „běží drahý režim", což je smysl.
+
+> **Pozor:** `maxEffortLevel: "xhigh"` je strop — `/effort max` se v nabídce
+> neobjeví. To je v rozporu s odstavcem níž; když max potřebuješ, smaž ten
+> jeden řádek ze `settings.json`.
 
 - `xhigh` — coding a agentic práce (Claude Code tam má vlastní default)
 - `high` — všechno ostatní intelligence-sensitive
@@ -133,18 +138,21 @@ v agent frontmatteru je nech, nepiš full model ID.
 | `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
 | `sonnet` | Sonnet 5     | `claude-sonnet-5`  | 1M      | $3 / $15    |
 | `opus`   | **Opus 5**   | `claude-opus-5`    | 1M      | $5 / $25    |
-| `fable`  | Fable 5      | `claude-fable-5`   | 1M      | $10 / $50   |
+| `fable`  | Fable 5.1    | `claude-fable-5-1` | 1M      | $10 / $50   |
 
-Fable 5 je nejsilnější veřejně dostupný model — dvojnásobná cena Opusu, takže
-jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Mythos 5
+Fable je nejsilnější veřejně dostupný model — dvojnásobná cena Opusu, takže
+jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Alias `fable` míří
+na nejnovější verzi sám, proto v agent frontmatteru piš alias, ne plné ID. Mythos 5
 (`claude-mythos-5`) je stejný model pro Project Glasswing — nemáme přístup.
 
 Fable pro subagenty je tvrdě zablokovaný přes `permissions.deny` →
 `Agent(model:fable)` v `settings.json`. Deny rule se vyhodnocuje před
 classifierem i před promptem, takže tohle pravidlo nejde obejít omylem.
 
-**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5"]` — když je
-opus přetížený, session spadne na Sonnet 5 místo aby se zasekla.
+**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5",
+"claude-haiku-4-5"]` — když je opus přetížený, session spadne na Sonnet 5, a
+když ani ten není, na Haiku. Ten druhý krok stojí za zvážení: pád z Opusu na
+Haiku je tichý propad kvality uprostřed práce a nikdo ho neoznámí.
 
 Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
 

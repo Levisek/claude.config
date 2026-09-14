@@ -24,14 +24,23 @@ process.stdin.on('end', () => {
   const prompt = String(data?.prompt || '').toLowerCase();
   if (!prompt) process.exit(0);
 
+  // Jen víceslovné imperativy — tedy PŘÍKAZ k dispatchi, ne zmínka o něm.
+  // Pravidlo „multi-word phrases jen" je napsané o kus níž u skillHints,
+  // ale tady se neuplatnilo: spouštěče jako 'agent ', ' plán', 'design ',
+  // 'refactor' nebo 'subagent' chytaly každou větu, která o té práci jen
+  // MLUVÍ. 2026-09-14 stačilo „a už používám subagenty" a hook vecpal do
+  // kontextu 250 tokenů návodu k dispatchi, který nikdo nechtěl — a sám
+  // si to uvědomoval, protože blok končil větou „pokud to byl
+  // false-positive, ignoruj". Za omluvu se platí stejně jako za pokyn.
   const tokenTriggers = [
-    'rozdělej', 'rozděl to', 'naplánuj', 'naplán', 'agenti', 'agent ', 'agents',
-    'subagent', 'sdd', 'subagent-driven', 'parallel', 'paralelně',
-    'použij haiku', 'use haiku', 'cheap agent', 'levné agent',
-    ' plán', 'navrhni', 'navrhnout', 'design ', 'spec ', 'specifikuj',
-    'roadmap', 'architecture', 'architekturu',
-    'refactor', 'přepiš', 'rewrite', 'multi-soubor', 'multi-file',
-    'token-aware', 'jaký model', 'what model', 'which agents',
+    'rozdělej to mezi', 'rozděl to mezi', 'rozdělej mezi agenty',
+    'použij agenty', 'použij subagenty', 'pusť agenty', 'spusť agenty',
+    'nasaď agenty', 'více agentů', 'víc agentů',
+    'paralelně agenty', 'agenty paralelně', 'dispatchuj',
+    'použij haiku', 'use haiku', 'cheap agents', 'levné agenty',
+    'which agents', 'spawn agents', 'run agents', 'use subagents',
+    'parallel agents', 'subagent dispatch',
+    'jaký model použij', 'jaký model na to', 'what model should',
   ];
 
   const timeTriggers = [
