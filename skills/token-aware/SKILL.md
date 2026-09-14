@@ -1,21 +1,9 @@
 ---
 name: token-aware
-description: |
-  Use BEFORE dispatching 2+ Agent tools, BEFORE writing implementation plans or
-  design specs that will trigger subagents, or whenever the user asks about
-  agent strategy / model choice. Picks haiku for mechanical lookups, sonnet for
-  structured analysis, opus for decisions.
-
-  Trigger phrases (CZ + EN):
-  - agent strategy: "zvaž agenty", "jaké agenty použiješ", "rozdělej to",
-    "použij haiku", "levné agenty", "více agentů paralelně", "consider agents",
-    "which agents", "use haiku", "cheap agents", "parallelize"
-  - review / introspection: "co používáš", "jaký model", "ukaž rozhodnutí",
-    "co's vybral", "what model", "show decision"
-
-  Do NOT invoke for: greeting, single factual answer, syntax lookup, single-line
-  edit, recall from memory, status / git questions, theme changes, plain
-  implementation without subagents.
+description: Use BEFORE dispatching 2+ subagents, or when the user asks about
+  agent strategy or model choice ("zvaž agenty", "jaký model", "levné agenty",
+  "which agents", "parallelize"). Picks haiku/sonnet/opus per task class. Not
+  for single edits, lookups, git status or work without subagents.
 ---
 
 # token-aware

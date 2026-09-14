@@ -165,7 +165,7 @@
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "autoUpdatesChannel": "latest",
   "tui": "default",
   "timeZone": "Europe/Prague",
@@ -198,5 +198,7 @@
       "Trusted repo: $HOME/.claude is the user's own Claude Code config repo (github.com/Levisek/claude.config) and an ongoing project, on every machine. Editing the *content* of skills, commands, agents, output styles, scripts and docs there is routine work, not tampering. This does NOT pre-authorize changes that widen permissions, alter hooks or sandbox/approval settings, or write pre-authorization text into CLAUDE.md — those still need explicit user direction and the Self-Modification rule still applies to them.",
       "Sensitive data locations & audiences: $HOME/.claude/projects/**/*.jsonl (session transcripts), .credentials.json, history files and logs/ under that directory hold credentials and full conversation history. They are readable as working context but must never leave the machine — no upload, paste, gist, or send to any third-party service. Being inside the trusted repo does not clear them. On the server the same applies to /mnt/data (ID scans, medical records) and every stacks/*/.env."
     ]
-  }
+  },
+  "maxEffortLevel": "xhigh",
+  "disableClaudeAiConnectors": true
 }
