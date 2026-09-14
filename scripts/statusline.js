@@ -48,6 +48,9 @@ process.stdin.on('end', () => {
       } else if (s === 'limits') {
         const seg = limitsSegment(data);
         if (seg) segments.push(seg);
+      } else if (s === 'rada') {
+        const seg = radaSegment(data);
+        if (seg) segments.push(seg);
       } else if (s === 'cache') {
         const seg = cacheSegment(data);
         if (seg) segments.push(seg);
@@ -201,17 +204,39 @@ function countSourceFiles(root) {
   return count;
 }
 
+// Claude Code posila `rate_limits` nepravidelne a jmena oken se casem meni
+// (five_hour, seven_day, ...). Neuhadujeme klic — projdeme, co prislo, a
+// radime podle toho, co je nejbliz stropu. Puvodni verze cetla natvrdo
+// `five_hour`, takze 2026-09-14 svitila zelena "5h 0%", zatimco tydenni
+// okno bylo na 100 % a limit byl vycerpany. Listka hlidala spatne okno.
+const DELKA_OKNA = { five_hour: 5 * 3600, seven_day: 7 * 86400 };
+const ZKRATKA_OKNA = { five_hour: '5h', seven_day: '7d' };
+
+function limitWindows(data) {
+  const rl = data?.rate_limits;
+  if (!rl || typeof rl !== 'object') return [];
+  const out = [];
+  for (const [name, w] of Object.entries(rl)) {
+    if (w && typeof w.used_percentage === 'number') {
+      out.push({ name, used: w.used_percentage, resetsAt: w.resets_at });
+    }
+  }
+  return out.sort((a, b) => b.used - a.used);
+}
+
 function limitsSegment(data) {
-  const fh = data?.rate_limits?.five_hour;
-  if (!fh || typeof fh.used_percentage !== 'number') return null;
-  const used = Math.round(fh.used_percentage);
+  const okna = limitWindows(data);
+  if (!okna.length) return null;
+  const okno = okna[0];
+  const used = Math.round(okno.used);
+  const znacka = ZKRATKA_OKNA[okno.name] || okno.name;
 
   let pace = '';
   let paceDelta = 0;
   let remainingStr = '';
-  if (typeof fh.resets_at === 'number') {
-    const WINDOW_S = 5 * 3600;
-    const remaining = fh.resets_at - (Date.now() / 1000);
+  const WINDOW_S = DELKA_OKNA[okno.name];
+  if (typeof okno.resetsAt === 'number' && WINDOW_S) {
+    const remaining = okno.resetsAt - (Date.now() / 1000);
     const elapsed = WINDOW_S - remaining;
     if (elapsed > 60 && elapsed < WINDOW_S) {
       const elapsedPct = (elapsed / WINDOW_S) * 100;
@@ -225,7 +250,9 @@ function limitsSegment(data) {
     if (remaining > 0) {
       const h = Math.floor(remaining / 3600);
       const m = Math.floor((remaining % 3600) / 60);
-      remainingStr = ` zbývá ${h}h${String(m).padStart(2, '0')}m`;
+      remainingStr = h >= 24
+        ? ` zbývá ${Math.floor(h / 24)}d${h % 24}h`
+        : ` zbývá ${h}h${String(m).padStart(2, '0')}m`;
     }
   }
 
@@ -234,7 +261,35 @@ function limitsSegment(data) {
   else if (used > 50 || paceDelta > 10) color = 'yellow';
   else color = 'green';
 
-  return { text: `5h ${used}%${pace}${remainingStr}`, color };
+  return { text: `${znacka} ${used}%${pace}${remainingStr}`, color };
+}
+
+// Radce. MLCI, dokud neni co delat — hlidac, ktery svitI porad, nikdo necte
+// (viz `Monitor muze byt cerveny od zacatku a nikdo si nevsimne` v trezoru).
+// Poradi je poradi naléhavosti: prvni, co sedne, vyhrava.
+const DRAHE_MODELY = ['opus', 'fable', 'mythos'];
+
+function radaSegment(data) {
+  const okna = limitWindows(data);
+  const vycerpano = okna.length ? okna[0].used : null;
+  const rodina = String(shortModel(data?.model?.display_name || data?.model?.id || '')).split(' ')[0];
+  const drahy = DRAHE_MODELY.includes(rodina);
+  const ctx = data?.context_window?.used_percentage;
+  const effort = String(data?.effort?.level || '').toLowerCase();
+
+  if (drahy && vycerpano !== null && vycerpano >= 85) {
+    return { text: 'switch to: sonnet', color: 'red' };
+  }
+  if (typeof ctx === 'number' && ctx >= 80) {
+    return { text: 'switch to: /compact', color: 'yellow' };
+  }
+  if (drahy && vycerpano !== null && vycerpano >= 70) {
+    return { text: 'switch to: sonnet', color: 'yellow' };
+  }
+  if ((effort === 'xhigh' || effort === 'max') && vycerpano !== null && vycerpano >= 60) {
+    return { text: 'switch to: /effort high', color: 'yellow' };
+  }
+  return null;
 }
 
 // Claude 5 éra: effortLevel je reálný knob (low/medium/high/xhigh/max).
