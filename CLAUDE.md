@@ -41,10 +41,51 @@ ultracode` nebo `claude --effort ultracode`.
 - Před změnou přečti soubor, ať vidíš aktuální stav
 - Ukazuj jen změněné části kódu
 
+## Ověřování
+
+Kontrola, která měří něco jiného, než co tvrdím, je horší než žádná —
+vyrobí jistotu tam, kde není.
+
+- **Ověřuj výsledek, ne cestu.** Že se změna doručila, neznamená, že se
+  projevila. 2026-09-13: ověřeno, že si televize stáhla Vlastní CSS,
+  a z toho vyvozeno, že bude vypadat jako prohlížeč. Nebude — starý
+  Chromium nepodporovaná pravidla tiše zahodí. Doručení a účinek jsou
+  dvě různá tvrzení a každé chce vlastní důkaz.
+- **Ověřovací dotaz nesmí nacházet sám sebe.** Hledání `@supports not`
+  v souboru dvakrát po sobě uspělo na textu uvnitř mého vlastního
+  vysvětlujícího komentáře. Před počítáním výskytů komentáře odstraň
+  (`re.sub(r'/\*.*?\*/', '', s, flags=re.S)`), nebo hledej v tom, co
+  doopravdy čte stroj, ne v souboru.
+- **Negativní výsledek zapiš jako negativní.** Když se opatření nasadí
+  a nezabere, nesmí v poznámkách zůstat jako „vyřešeno" — příští hledání
+  by to poslalo špatným směrem. 2026-09-13: `vm.swappiness=10` nasazena,
+  změřena, nezabrala; zapsané je to takhle.
+- **Ověřuj v prostředí, které to pak spustí** — cron má jiný PATH, jiného
+  uživatele a žádného ssh-agenta. Zkouška ve vlastním shellu netestuje
+  to, co se pak spustí.
+
 ## Commit workflow
 - Commit message česky, krátký popis + případný kontext
 - Nepřidávej Co-Authored-By ani jiné patičky — commituj jen pod uživatelovým jménem
   (vynuceno configem: `attribution: { commit: "", pr: "" }` v `settings.json`)
+- **Commit message piš přes heredoc, ne přes `-m "..."`.** V dvojitých
+  uvozovkách bash vyhodnotí zpětné uvozovky jako command substitution a
+  do zprávy vloží prázdno nebo chybovou hlášku. Zprávy o kódu jsou přitom
+  zpětných uvozovek plné, protože se jimi značí syntaxe — takže tenhle
+  problém mají přesně ty zprávy, u kterých na přesnosti záleží.
+
+  ```bash
+  git commit -F - <<'KONEC'
+  Nadpis
+
+  Tělo, kde `?.` i `@supports (x)` projdou beze změny.
+  KONEC
+  ```
+
+  Chyceno 2026-09-12: z commitu `66c26ad` zmizelo `?.`, `:has()` a
+  `@supports (backdrop-filter)`, takže věta zněla „pluginy používají
+  (Chromium 80+)". **Zpětně to neopravuj `--amend`**, když je commit
+  pushnutý — force-push kvůli formulaci rozbije ostatní klony.
 
 ## Procesy a instance — DŮLEŽITÉ
 
