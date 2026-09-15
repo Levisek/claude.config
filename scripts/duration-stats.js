@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Agreguje ~/.claude/logs/agent-durations.jsonl per (repo × subagent_type).
 //
-// Filtr: jen poslední 90 dní, min. 3 vzorky per kombinace (jinak je číslo šum).
+// Filtr: jen poslední 90 dní, min. 3 vzorky per kombinace (jinak je číslo šum)
+// a jen dispatche delší než MIN_DURATION_MS (kratší nejsou změřená práce).
 //
 // Výstup:
 //   - cache/duration-stats.json (vždy přepsán)
@@ -19,6 +20,16 @@ const CACHE_PATH = path.join(HOME, '.claude', 'cache', 'duration-stats.json');
 
 const WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
 const MIN_SAMPLES = 3;
+
+// Dispatch kratší než tohle není změřený běh agenta, ale jen přijetí úkolu.
+// Subagenti od CC 2.1.195+ běží na pozadí, takže PostToolUse přijde hned po
+// PreToolUse a duration_ms měří latenci hooku, ne práci agenta. Zachyceno
+// 2026-09-15: tři rešerše v bird-astro-station se zapsaly jako 135–177 ms
+// a statistika začala tvrdit "median 0min · P90 0min" — což je přesně to
+// falešné číslo, kterému má MIN_SAMPLES bránit.
+// Syrový log se nefiltruje (je append-only a je to důkaz), filtruje se až
+// agregace.
+const MIN_DURATION_MS = 5000;
 
 function readLog(logPath = LOG_PATH) {
   if (!fs.existsSync(logPath)) return [];
@@ -57,6 +68,7 @@ function aggregate(entries, opts = {}) {
     const ts = Date.parse(e.ts || '');
     if (!ts || ts < cutoff) continue;
     if (typeof e.duration_ms !== 'number' || e.duration_ms < 0) continue;
+    if (e.duration_ms < MIN_DURATION_MS) continue;
 
     const repo = e.repo || 'unknown';
     const sub = e.subagent_type || 'task';
