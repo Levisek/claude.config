@@ -34,8 +34,27 @@ process.stdin.on('end', () => {
   }
   if (!tsconfigDir) process.exit(0);
 
+  // Domácí server nemá npm ani npx, jen node — `npx tsc` tam skončí hláškou
+  // "command not found". To se od skutečných chyb překladu nijak neliší:
+  // zapsalo se `ok:false, errors:0` a test-gate od té chvíle blokoval každý
+  // `git push` hláškou "? error(s)", i když byl překlad čistý.
+  // Proto se napřed hledá tsc v repozitáři; npx je až záloha.
+  //
+  // Hledá se SMĚREM NAHORU, ne jen vedle tsconfigu: podprojekt má klidně
+  // vlastní `tsconfig.json`, ale `node_modules` leží až v kořeni repozitáře
+  // (levis-ide/mobil). Bez toho hook na podprojektu zase spadl na npx.
+  let mistniTsc = null;
+  for (let d = tsconfigDir; ; d = path.dirname(d)) {
+    const kandidat = path.join(d, 'node_modules', 'typescript', 'bin', 'tsc');
+    if (fs.existsSync(kandidat)) { mistniTsc = kandidat; break; }
+    if (d === path.dirname(d)) break;
+  }
+  const prikaz = mistniTsc
+    ? `"${process.execPath}" "${mistniTsc}" --noEmit`
+    : 'npx tsc --noEmit';
+
   try {
-    execSync('npx tsc --noEmit', {
+    execSync(prikaz, {
       cwd: tsconfigDir,
       timeout: 20000,
       stdio: ['ignore', 'pipe', 'pipe'],
