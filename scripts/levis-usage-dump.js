@@ -28,6 +28,18 @@ process.stdin.on('end', () => {
   const cfgRoot = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 
   // 1) Dump pro LevisIDE Hub
+  //
+  // Zapisuje se přes dočasný soubor a `rename`, protože statusline renderuje
+  // KAŽDÉ běžící sezení Claude Code — na serveru jich je deset naráz a všechna
+  // míří do jednoho souboru. Přímý `writeFileSync` je nechá psát přes sebe:
+  // kratší zápis nepřepíše celý předchozí a za jeho koncem zůstane ocas toho
+  // delšího. Přejmenování je v rámci jednoho souborového systému atomické,
+  // takže čtenář vidí vždycky jeden celý dump.
+  //
+  // Chyceno 2026-09-15: ~/.claude/levis-usage.json měl platný JSON po pozici
+  // 3293 a za ním 72 bajtů z předchozího dumpu. LevisIDE ho neumělo přečíst,
+  // takže usage widget ukazoval 0 % místo skutečného limitu.
+  let tmpPath = null;
   try {
     const dump = {
       capturedAt: Date.now(),
@@ -38,10 +50,15 @@ process.stdin.on('end', () => {
     };
     const dumpPath = path.join(cfgRoot, 'levis-usage.json');
     fs.mkdirSync(path.dirname(dumpPath), { recursive: true });
-    fs.writeFileSync(dumpPath, JSON.stringify(dump, null, 2));
+    tmpPath = dumpPath + '.' + process.pid + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(dump, null, 2));
+    fs.renameSync(tmpPath, dumpPath);
+    tmpPath = null;
   } catch (_err) {
     // tichá chyba — nesmíme rozbít CC statusline
   }
+  // Když zápis spadl mezi writeFileSync a rename, ať po sobě uklidíme.
+  if (tmpPath) { try { fs.unlinkSync(tmpPath); } catch {} }
 
   // 2) Wrapper mode — předej vstup do user's inner statusline
   let innerCmd = null;
