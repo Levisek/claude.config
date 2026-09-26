@@ -39,16 +39,29 @@ process.stdin.on('end', () => {
   // Chyceno 2026-09-15: ~/.claude/levis-usage.json měl platný JSON po pozici
   // 3293 a za ním 72 bajtů z předchozího dumpu. LevisIDE ho neumělo přečíst,
   // takže usage widget ukazoval 0 % místo skutečného limitu.
+  //
+  // Limity patří účtu, ne session. Statusline je ale posílá jen té session,
+  // která už něco poslala do API — čerstvě otevřená session je vykreslí
+  // s `rate_limits` prázdnými. Kdyby se to zapsalo, přepíše to platné limity
+  // z jiné session a widget spadne na odhad z cen. Chyceno 2026-09-26: dump
+  // měl `rate_limits: null` a widget ukazoval „~100 %".
+  // Proto: bez nových limitů se převezmou ty minulé i s časem, kdy přišly
+  // (`rateLimitsAt` — podle něj widget pozná snímek z doby před resetem).
   let tmpPath = null;
   try {
+    const dumpPath = path.join(cfgRoot, 'levis-usage.json');
+    const ted = Date.now();
+    let predchozi = null;
+    try { predchozi = JSON.parse(fs.readFileSync(dumpPath, 'utf8')); } catch {}
+    const maLimity = !!(data.rate_limits && (data.rate_limits.five_hour || data.rate_limits.seven_day));
     const dump = {
-      capturedAt: Date.now(),
+      capturedAt: ted,
       raw: data,
-      rate_limits: data.rate_limits || null,
+      rate_limits: maLimity ? data.rate_limits : ((predchozi && predchozi.rate_limits) || null),
+      rateLimitsAt: maLimity ? ted : ((predchozi && (predchozi.rateLimitsAt || predchozi.capturedAt)) || null),
       context_window: data.context_window || null,
       model: data.model || null,
     };
-    const dumpPath = path.join(cfgRoot, 'levis-usage.json');
     fs.mkdirSync(path.dirname(dumpPath), { recursive: true });
     tmpPath = dumpPath + '.' + process.pid + '.tmp';
     fs.writeFileSync(tmpPath, JSON.stringify(dump, null, 2));
