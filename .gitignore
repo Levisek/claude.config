@@ -105,3 +105,6 @@ settings.local.json
 chrome/
 # stav Claude Code pro tenhle stroj (historie projektu, ucet)
 .claude.json
+
+# Skilly stažené z claude.ai (per účet, synchronizuje je CC samo)
+skills/synced/
