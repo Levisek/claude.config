@@ -33,6 +33,12 @@ process.stdin.on('end', () => {
   let usage;
   try { usage = JSON.parse(fs.readFileSync(USAGE_PATH, 'utf8')); } catch { process.exit(0); }
 
+  // levis-usage.json je jeden sdílený soubor — zapisuje ho statusline té
+  // session, která zrovna běžela naposled. Chat přes SDK statusline nespouští,
+  // takže by tu četl cizí čísla (2026-09-26: čerstvá session dostala „801k“
+  // z jiné, otevřené v terminálu). Cizí data ignoruj.
+  if (usage?.raw?.session_id !== sessionId) process.exit(0);
+
   const cw = usage?.raw?.context_window;
   if (!cw) process.exit(0);
 
@@ -63,7 +69,7 @@ process.stdin.on('end', () => {
   } catch {}
 
   const kTokens = Math.round(inputTokens / 1000);
-  const costPerTurn = (inputTokens / 1_000_000 * 15).toFixed(2); // Opus input ~$15/Mtok
+  const costPerTurn = (inputTokens / 1_000_000 * 5).toFixed(2); // Opus 5 input $5/Mtok
 
   let msg;
   if (level === 'hard') {
