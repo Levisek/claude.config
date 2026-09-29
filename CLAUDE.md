@@ -137,10 +137,16 @@ v agent frontmatteru je nech, nepiš full model ID.
 | -------- | ------------ | ------------------ | ------- | ----------- |
 | `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
 | `sonnet` | Sonnet 5     | `claude-sonnet-5`  | 1M      | $3 / $15    |
-| `opus`   | **Opus 5**   | `claude-opus-5`    | 1M      | $5 / $25    |
+| `opus`   | **Opus 5.5** | `claude-opus-5-5`  | 1M      | $4 / $20    |
+| —        | Opus 5       | `claude-opus-5`    | 1M      | $5 / $25    |
 | `fable`  | Fable 5.1    | `claude-fable-5-1` | 1M      | $10 / $50   |
 
-Fable je nejsilnější veřejně dostupný model — dvojnásobná cena Opusu, takže
+Alias `opus` od září 2026 míří na **Opus 5.5** (cache read $0,20/1M místo
+$0,50). Pozor na effort: Opus 5.5 má upstream default `medium` a na stejně
+pojmenované úrovni přemýšlí víc než Opus 5 — `high` na 5.5 je dražší než
+`high` na 5. Opus 5 zůstává jako záloha přes plné ID.
+
+Fable je nejsilnější veřejně dostupný model — 2,5× cena Opusu 5.5, takže
 jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Alias `fable` míří
 na nejnovější verzi sám, proto v agent frontmatteru piš alias, ne plné ID. Mythos 5
 (`claude-mythos-5`) je stejný model pro Project Glasswing — nemáme přístup.

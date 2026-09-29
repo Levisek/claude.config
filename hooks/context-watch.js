@@ -69,18 +69,20 @@ process.stdin.on('end', () => {
   } catch {}
 
   const kTokens = Math.round(inputTokens / 1000);
-  const costPerTurn = (inputTokens / 1_000_000 * 5).toFixed(2); // Opus 5 input $5/Mtok
+  // Kontext se skoro celý čte z cache: Opus 5.5 cache read $0,20/Mtok.
+  // Plná cena vstupu ($4–5) by odhad nafoukla dvacetkrát.
+  const costPerTurn = (inputTokens / 1_000_000 * 0.2).toFixed(2);
 
   let msg;
   if (level === 'hard') {
     msg = `<context-pressure level="hard">
-Context window: **${kTokens}k input tokens** (~$${costPerTurn}/turn at Opus input rates).
+Context window: **${kTokens}k input tokens** (~$${costPerTurn} per API call at Opus 5.5 cache-read rates).
 Recommend running \`/compact\` NOW — cost grows linearly with context size.
 In your next response, suggest to the user: "Doporučuju spustit /compact, kontext je u ${kTokens}k."
 </context-pressure>`;
   } else {
     msg = `<context-pressure level="soft">
-Context window: **${kTokens}k input tokens** (~$${costPerTurn}/turn at Opus input rates).
+Context window: **${kTokens}k input tokens** (~$${costPerTurn} per API call at Opus 5.5 cache-read rates).
 Consider suggesting \`/compact\` to the user if upcoming work doesn't need full history.
 This reminder fires once per threshold per session — ignore if active task still needs context.
 </context-pressure>`;
