@@ -9,7 +9,9 @@ budget rozdělí sám podle úlohy) — vyhozený.
 Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/**xhigh**/max)
 — nastavitelný v settings.json nebo interaktivně, upstream default `high`.
 **V `settings.json` je `"effortLevel": "high"` a `"maxEffortLevel": "xhigh"`**
-(změněno 2026-09-14). `high` je zároveň upstream default; xhigh se bere vědomě
+(změněno 2026-09-14). **Výjimka: Opus 5.5 má přes `modelSettings` `medium`**
+(2026-09-30) — upstream default, na stejné úrovni přemýšlí víc než Opus 5
+a medium na něm dává na kódování aspoň tolik co max na Opusu 5. `high` je zároveň upstream default; xhigh se bere vědomě
 přes `/effort xhigh` na konkrétní úlohu. Status lišta ukazuje effort jen když se
 liší od `high` (viz `scripts/statusline.js`), takže v ní teď normálně nic není —
 a když tam `xhigh` uvidíš, znamená to „běží drahý režim", což je smysl.
@@ -155,10 +157,10 @@ Fable pro subagenty je tvrdě zablokovaný přes `permissions.deny` →
 `Agent(model:fable)` v `settings.json`. Deny rule se vyhodnocuje před
 classifierem i před promptem, takže tohle pravidlo nejde obejít omylem.
 
-**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5",
-"claude-haiku-4-5"]` — když je opus přetížený, session spadne na Sonnet 5, a
-když ani ten není, na Haiku. Ten druhý krok stojí za zvážení: pád z Opusu na
-Haiku je tichý propad kvality uprostřed práce a nikdo ho neoznámí.
+**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5"]` — když
+je opus přetížený, session spadne na Sonnet 5. Haiku z řetězu vypadl
+2026-09-30: pád z Opusu na Haiku byl tichý propad kvality uprostřed práce,
+radši chyba než to.
 
 Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
 
