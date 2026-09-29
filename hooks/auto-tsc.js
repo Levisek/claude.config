@@ -8,8 +8,6 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const theme = require(path.join(os.homedir(), '.claude', 'lib', 'theme.js'));
-
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', c => input += c);
@@ -73,30 +71,25 @@ process.stdin.on('end', () => {
     writeStatus(sessionId, { ok: false, errors: lines.length, file: relEdited, timestamp: Date.now(), timeout: isTimeout });
 
     if (lines.length === 0) {
-      if (isTimeout) {
-        const g = theme.glyphs();
-        console.log(theme.box({
-          title: `${g.warn} tsc timeout (20s) · ${relEdited}`,
-          lines: [`${g.bulb} tip: spusť /tsc ručně`],
-        }));
-      }
+      if (isTimeout) sdel(`tsc timeout (20 s) u ${relEdited} — spusť /tsc ručně.`);
       process.exit(0);
     }
 
     const top = lines.slice(0, 5).map(l => compactError(l, tsconfigDir));
-    const boxLines = [...top];
-    if (lines.length > 5) boxLines.push(`… a dalších ${lines.length - 5}`);
-    boxLines.push('');
-    boxLines.push(`${theme.glyphs().bulb} tip: spusť /tsc pro plný output`);
-
-    const g = theme.glyphs();
-    console.log(theme.box({
-      title: `${g.warn} tsc · ${lines.length} chyb v ${relEdited}`,
-      lines: boxLines,
-    }));
+    if (lines.length > 5) top.push(`… a dalších ${lines.length - 5}`);
+    sdel([`tsc: ${lines.length} chyb v ${relEdited}`, ...top, 'Plný výstup: /tsc.'].join('\n'));
     process.exit(0);
   }
 });
+
+// Holý stdout z PostToolUse model nevidí (jen přepis v TUI přes Ctrl+R),
+// v chatu LevisIDE ho nevidí nikdo. K modelu se dostane jen JSON
+// s additionalContext — ověřeno 2026-09-30 pokusem přes Agent SDK.
+function sdel(text) {
+  console.log(JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text },
+  }));
+}
 
 function writeStatus(sessionId, status) {
   if (!sessionId) return;

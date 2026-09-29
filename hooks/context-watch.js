@@ -30,19 +30,19 @@ process.stdin.on('end', () => {
   const sessionId = data?.session_id || '';
   if (!sessionId) process.exit(0);
 
-  let usage;
-  try { usage = JSON.parse(fs.readFileSync(USAGE_PATH, 'utf8')); } catch { process.exit(0); }
-
   // levis-usage.json je jeden sdílený soubor — zapisuje ho statusline té
   // session, která zrovna běžela naposled. Chat přes SDK statusline nespouští,
   // takže by tu četl cizí čísla (2026-09-26: čerstvá session dostala „801k“
-  // z jiné, otevřené v terminálu). Cizí data ignoruj.
-  if (usage?.raw?.session_id !== sessionId) process.exit(0);
-
-  const cw = usage?.raw?.context_window;
-  if (!cw) process.exit(0);
-
-  const inputTokens = Number(cw.total_input_tokens || 0);
+  // z jiné, otevřené v terminálu). Cizí data ignoruj a vezmi velikost
+  // kontextu z vlastního přepisu — jinak hook v chatu LevisIDE mlčel vždycky.
+  let inputTokens = 0;
+  try {
+    const usage = JSON.parse(fs.readFileSync(USAGE_PATH, 'utf8'));
+    if (usage?.raw?.session_id === sessionId) {
+      inputTokens = Number(usage?.raw?.context_window?.total_input_tokens || 0);
+    }
+  } catch {}
+  if (!inputTokens) inputTokens = kontextZPrepisu(data?.transcript_path);
   if (!inputTokens) process.exit(0);
 
   // Read warned-flags pro tuto session
@@ -94,3 +94,31 @@ This reminder fires once per threshold per session — ignore if active task sti
   }));
   process.exit(0);
 });
+
+// Velikost kontextu = vstup poslední odpovědi hlavní konverzace (bez
+// subagentů). Čte se jen konec souboru — přepis mívá desítky MB.
+function kontextZPrepisu(cesta) {
+  if (!cesta) return 0;
+  let text;
+  try {
+    const fd = fs.openSync(cesta, 'r');
+    try {
+      const velikost = fs.fstatSync(fd).size;
+      const delka = Math.min(velikost, 512 * 1024);
+      const buf = Buffer.alloc(delka);
+      fs.readSync(fd, buf, 0, delka, velikost - delka);
+      text = buf.toString('utf8');
+    } finally { fs.closeSync(fd); }
+  } catch { return 0; }
+  const radky = text.split('\n');
+  for (let i = radky.length - 1; i >= 0; i--) {
+    if (!radky[i].includes('"type":"assistant"')) continue;
+    let z;
+    try { z = JSON.parse(radky[i]); } catch { continue; } // první řádek bývá useknutý
+    if (z?.type !== 'assistant' || z.isSidechain) continue;
+    const u = z.message?.usage;
+    if (!u) continue;
+    return Number(u.input_tokens || 0) + Number(u.cache_read_input_tokens || 0) + Number(u.cache_creation_input_tokens || 0);
+  }
+  return 0;
+}
