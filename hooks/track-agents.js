@@ -32,7 +32,6 @@ process.stdin.on('end', () => {
   const toolUseId = data?.tool_use_id || data?.tool_input?.tool_use_id || '';
 
   if (!sessionId) {
-    if (event === 'PreToolUse') emitDefer();
     process.exit(0);
   }
 
@@ -78,9 +77,11 @@ process.stdin.on('end', () => {
           updatedInput: { ...ti, model: inferredModel },
         },
       }));
-    } else {
-      emitDefer();
     }
+    // Jinak nic nevypisuj. `permissionDecision: 'defer'` neznamená „bez názoru“:
+    // v headless/SDK režimu ukončí turn s terminal_reason `tool_deferred`
+    // a čeká na obnovení zvenku. Chat v LevisIDE ho neobnoví, takže každý
+    // dispatch s explicitním `model` visel a skončil „Tool result missing“.
     process.exit(0);
   } else if (event === 'PostToolUse') {
     // Najdi záznam který se chystá smazat — předej do log-duration pro JSONL append
@@ -112,14 +113,6 @@ process.stdin.on('end', () => {
   process.exit(0);
 });
 
-function emitDefer() {
-  console.log(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: 'defer',
-    },
-  }));
-}
 
 function writeCache(all) {
   try {
