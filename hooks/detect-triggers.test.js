@@ -30,7 +30,7 @@ function runHook(prompt) {
 const cases = [
   {
     name: 'token-aware reminder with 6 agent names',
-    prompt: 'rozdělej to na agenty a naplánuj refactor X',
+    prompt: 'rozdělej to mezi agenty a naplánuj refactor X',
     mustContain: [
       'implementer-mech', 'implementer-multi',
       'spec-reviewer', 'code-reviewer',
