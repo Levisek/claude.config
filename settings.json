@@ -45,7 +45,7 @@
   },
   "model": "opus",
   "fallbackModel": [
-    "claude-sonnet-5"
+    "claude-sonnet-5-5"
   ],
   "hooks": {
     "PreToolUse": [

@@ -138,7 +138,7 @@ v agent frontmatteru je nech, nepiš full model ID.
 | Alias    | Model        | Full ID            | Context | $/1M in-out |
 | -------- | ------------ | ------------------ | ------- | ----------- |
 | `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
-| `sonnet` | Sonnet 5     | `claude-sonnet-5`  | 1M      | $3 / $15    |
+| `sonnet` | **Sonnet 5.5** | `claude-sonnet-5-5` | 1M    | $2 / $10    |
 | `opus`   | **Opus 5.5** | `claude-opus-5-5`  | 1M      | $4 / $20    |
 | —        | Opus 5       | `claude-opus-5`    | 1M      | $5 / $25    |
 | `fable`  | Fable 5.1    | `claude-fable-5-1` | 1M      | $10 / $50   |
@@ -147,6 +147,11 @@ Alias `opus` od září 2026 míří na **Opus 5.5** (cache read $0,20/1M místo
 $0,50). Pozor na effort: Opus 5.5 má upstream default `medium` a na stejně
 pojmenované úrovni přemýšlí víc než Opus 5 — `high` na 5.5 je dražší než
 `high` na 5. Opus 5 zůstává jako záloha přes plné ID.
+
+Alias `sonnet` míří od 2026-09-28 na **Sonnet 5.5** (cache read $0,20,
+v Claude Code default effort `medium`). Obě 5.5 mají „preserved thinking“:
+přenos konverzace mezi účty uprostřed session se může rozbít — týká se
+přepínání účtů v LevisIDE (`prenos-uctu.ts`).
 
 Fable je nejsilnější veřejně dostupný model — 2,5× cena Opusu 5.5, takže
 jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Alias `fable` míří
@@ -157,8 +162,8 @@ Fable pro subagenty je tvrdě zablokovaný přes `permissions.deny` →
 `Agent(model:fable)` v `settings.json`. Deny rule se vyhodnocuje před
 classifierem i před promptem, takže tohle pravidlo nejde obejít omylem.
 
-**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5"]` — když
-je opus přetížený, session spadne na Sonnet 5. Haiku z řetězu vypadl
+**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5-5"]` — když
+je opus přetížený, session spadne na Sonnet 5.5. Haiku z řetězu vypadl
 2026-09-30: pád z Opusu na Haiku byl tichý propad kvality uprostřed práce,
 radši chyba než to.
 
