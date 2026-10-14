@@ -108,3 +108,6 @@ chrome/
 
 # Skilly stažené z claude.ai (per účet, synchronizuje je CC samo)
 skills/synced/
+
+# Koš smazaných skillů (správce skillů sem odkládá místo mazání)
+skills/.trash/
