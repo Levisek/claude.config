@@ -64,7 +64,7 @@ process.stdin.on('end', () => {
   const PREPINAC = /^-{1,2}[a-z0-9-]+$/i;
   // Hlavy hlídaných příkazů. Slouží jen k tomu, aby se `sudo -u rm` nespletlo
   // s hodnotou přepínače a `rm` se nesnědlo jako argument `-u`.
-  const HLAVY = /^(rm|remove-item|del|rd|rmdir|git|mkfs|dd|chmod|format|taskkill|stop-process|get-process|pkill|killall|kill-port|fuser|wmic|invoke-cimmethod)$/i;
+  const HLAVY = /^(rm|remove-item|del|rd|rmdir|git|mkfs|dd|chmod|format|taskkill|stop-process|get-process|pkill|killall|kill-port|fuser|wmic|invoke-cimmethod|find|rsync|docker|docker-compose|unlink|shred|truncate|cd)$/i;
 
   /**
    * Zahodí z úseku to, co příkaz jen spouští, a vrátí zbytek od jeho hlavy.
@@ -179,6 +179,50 @@ process.stdin.on('end', () => {
 
   for (const { re, why, kdekoli, citliveNaVelikost } of patterns) {
     if (kdekoli ? re.test(cmd) : vUseku(re, citliveNaVelikost)) block(why);
+  }
+
+  // ── Data na /mnt (domácí server) ────────────────────────────────────────
+  // Deny seznam v settings.json je jen vzor textu: `Bash(rm -rf /mnt/*)`
+  // nechytí `rm -rf "/mnt/data"` ani `find /mnt -delete`. Server běží
+  // v bypassPermissions, protože noční úlohy nemají koho se ptát — skutečná
+  // zábrana proto musí být tady. Rozhodnuto 2026-10-16. Na stanici /mnt
+  // není, takže tam pravidla nic nestojí.
+  //
+  // Mazání se souhlasem uživatele spustí uživatel sám, stejně jako root
+  // příkazy. Relativní cesta se chytá přes `cd` do /mnt nebo přes cwd.
+  const MNT = /(^|[\s"'=(])\/mnt(\/|\s|["']|$)/;
+  const RADA_MNT = [
+    `${theme.color('Na /mnt leží fotky, doklady a zálohy.', 'dim')}`,
+    `  Mazání tam spouští jen uživatel, i když souhlasil.`,
+  ];
+  let vMnt = String(data?.cwd || '').startsWith('/mnt/');
+  for (const u of useky) {
+    if (/^cd\b/.test(u)) { vMnt = MNT.test(u) || (vMnt && !/^cd\s+[~/]/.test(u)); continue; }
+    const tady = vMnt || MNT.test(u);
+    if (!tady) continue;
+    if (/^(rm|rmdir|unlink|shred|truncate)\b/.test(u)) block('mazání na /mnt', RADA_MNT);
+    if (/^find\b/.test(u) && /(\s-delete\b|\s-exec(dir)?\s+(rm|shred|unlink)\b)/.test(u)) block('find s mazáním na /mnt', RADA_MNT);
+    if (/^rsync\b/.test(u) && /\s--(delete|remove-source-files)/.test(u)) block('rsync --delete na /mnt', RADA_MNT);
+  }
+  // Skript v heredocu nebo `python -c` nestojí v pozici příkazu, proto se
+  // hledá v celém textu. Daň: poznámka, která obojí jen zmiňuje, projde
+  // jen přes soubor, ne přes shell.
+  if (/\/mnt\//.test(cmd) && /(shutil\.rmtree|os\.(remove|unlink|rmdir|removedirs)\b|\.unlink\(|\.rmdir\(|fs\.(rm|rmsync|unlinksync|rmdirsync)\b)/.test(cmd)) {
+    block('mazání na /mnt ze skriptu', RADA_MNT);
+  }
+  if (/(^|[^>&0-9])>\s*["']?\/mnt\//.test(cmd)) block('přepsání souboru na /mnt', RADA_MNT);
+
+  // `down` na stacku s daty je zakázaný, `restart` ne. Svazky (`-v`) maže
+  // `down` na jakémkoli stacku.
+  const DATOVE = /(immich|paperless|unifi|webtrees|postgres|mariadb|mongo|bird)/;
+  for (const u of useky) {
+    if (/^(docker\s+compose|docker-compose)\b[\s\S]*\sdown\b/.test(u) &&
+        (/\s(-v|--volumes)\b/.test(u) || DATOVE.test(u) || DATOVE.test(String(data?.cwd || '')) || DATOVE.test(cmd))) {
+      block('docker compose down na stacku s daty', [`${theme.color('Místo toho:', 'dim')} docker compose restart`]);
+    }
+    if (/^docker\s+volume\s+(rm|prune)\b/.test(u) || /^docker\s+system\s+prune\b[\s\S]*--volumes/.test(u)) {
+      block('mazání svazků Dockeru');
+    }
   }
   process.exit(0);
 });

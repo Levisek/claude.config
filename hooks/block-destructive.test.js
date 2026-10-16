@@ -137,3 +137,62 @@ test('PowerShell zustava necitlivy na velikost', () => {
   assert.strictEqual(blocked('Stop-Process -NAME chrome'), true);
   assert.strictEqual(blocked('SUDO rm -rf /'), true, 'obalovac taky');
 });
+
+// ── /mnt na domácím serveru (2026-10-16) ──────────────────────────────────
+// Deny seznam je jen vzor textu a server jede v bypassPermissions. Hook je
+// jediná zábrana, která chytí i jinou podobu téhož příkazu.
+function blockedV(command, cwd) {
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ tool_input: { command }, cwd }),
+    encoding: 'utf8',
+  });
+  return r.status === 2;
+}
+
+test('mazání na /mnt se blokuje v každé podobě', () => {
+  for (const c of [
+    'rm -rf /mnt/data',
+    'rm -rf "/mnt/data"',
+    'rm /mnt/movies/film.mkv',
+    'sudo rm -r /mnt/zaloha/smazane',
+    'find /mnt -name "*.jpg" -delete',
+    'find /mnt/data -type f -exec rm {} \\;',
+    'rsync -a --delete /tmp/prazdno/ /mnt/data/',
+    'cd /mnt/movies/downloads && rm -r "Vox Machina"',
+    'cd "/mnt/data" ; rm x',
+    'python3 -c "import shutil; shutil.rmtree(\'/mnt/data/immich\')"',
+    "python3 - <<'EOF'\nimport os\nos.remove('/mnt/data/a.jpg')\nEOF",
+    'echo > /mnt/data/dulezite.txt',
+    'truncate -s 0 /mnt/zaloha/x',
+  ]) assert.ok(blockedV(c), `mělo blokovat: ${c}`);
+});
+
+test('relativní mazání v cwd na /mnt se blokuje', () => {
+  assert.ok(blockedV('rm -r downloads/x', '/mnt/movies'));
+  assert.ok(!blockedV('rm -r downloads/x', '/tmp/claude-1000'));
+  assert.ok(!blockedV('cd ~ && rm x', '/mnt/movies'));
+});
+
+test('čtení /mnt a mazání jinde projde', () => {
+  for (const c of [
+    'ls -la /mnt/data',
+    'du -sh /mnt/movies/*',
+    'find /mnt/data -name "*.jpg" -size +10M',
+    'ffmpeg -v error -i /mnt/data/a.jpg -f null -',
+    'rm -rf /tmp/claude-1000/gm',
+    'cd /mnt/movies && ls; cd /tmp && rm x',
+    'rsync -a /mnt/data/ /tmp/kopie/',
+    'sudo -n docker logs immich_server 2>/dev/null',
+    'cat /mnt/data/a.txt > /tmp/a.txt',
+  ]) assert.ok(!blockedV(c), `nemělo blokovat: ${c}`);
+});
+
+test('docker compose down jen mimo stacky s daty', () => {
+  assert.ok(blockedV('cd /opt/stacks/immich && docker compose down'));
+  assert.ok(blockedV('docker compose down', '/opt/stacks/paperless'));
+  assert.ok(blockedV('docker compose -f /opt/stacks/webtrees/docker-compose.yml down'));
+  assert.ok(blockedV('docker compose down -v', '/opt/stacks/jellyfin'));
+  assert.ok(blockedV('docker volume prune -f'));
+  assert.ok(!blockedV('docker compose down', '/opt/stacks/jellyfin'));
+  assert.ok(!blockedV('cd /opt/stacks/immich && docker compose restart'));
+});
