@@ -88,7 +88,7 @@ process.stdin.on('end', () => {
    - \`dead-code-scanner\` (haiku) — unused exports/imports
    - \`architect\` (opus) — design decisions, ADR
 3. **Dispatchuj jménem**: \`subagent_type: "<name>"\` v Agent tool callu. Model je v frontmatteru — explicit \`model:\` parametr není potřeba, ale stále override-uje pokud ho předáš.
-4. Pro 3+ tasků: SDD parallel batch mode je DEFAULT (viz CLAUDE.md).
+4. Paralelně jen nezávislé tracky (max ~3), review jednou na konci větve (viz CLAUDE.md *SDD — naše úprava*).
 
 Pokud user signál byl false-positive (např. mluví o agentech jako konceptu, ne o dispatchi), ignoruj.`);
   }

@@ -1,0 +1,333 @@
+# CLAUDE.md — plné znění před zkrácením (2026-10-22)
+
+> Archiv. Platná pravidla jsou v `~/.claude/CLAUDE.md`; tady zůstávají
+> důvody, incidenty a podrobnosti, které se z něj vyhodily. Nenačítá se
+> automaticky.
+
+# Globální pravidla pro Claude Code
+
+## Reasoning effort
+
+Effort se reguluje **implicitně přes model a komplexitu promptu**, ne přes
+explicitní tag. Předchozí `<reasoning_effort>` tag byl pseudo-knob (model si
+budget rozdělí sám podle úlohy) — vyhozený.
+
+Claude 5 modely mají skutečný knob `effortLevel` (low/medium/high/**xhigh**/max)
+— nastavitelný v settings.json nebo interaktivně, upstream default `high`.
+**V `settings.json` je `"effortLevel": "high"` a `"maxEffortLevel": "xhigh"`**
+(změněno 2026-09-14). **Výjimka: Opus 5.5 má přes `modelSettings` `medium`**
+(2026-09-30) — upstream default, na stejné úrovni přemýšlí víc než Opus 5
+a medium na něm dává na kódování aspoň tolik co max na Opusu 5. `high` je zároveň upstream default; xhigh se bere vědomě
+přes `/effort xhigh` na konkrétní úlohu. Status lišta ukazuje effort jen když se
+liší od `high` (viz `scripts/statusline.js`), takže v ní teď normálně nic není —
+a když tam `xhigh` uvidíš, znamená to „běží drahý režim", což je smysl.
+
+> **Pozor:** `maxEffortLevel: "xhigh"` je strop — `/effort max` se v nabídce
+> neobjeví. To je v rozporu s odstavcem níž; když max potřebuješ, smaž ten
+> jeden řádek ze `settings.json`.
+
+- `xhigh` — coding a agentic práce (Claude Code tam má vlastní default)
+- `high` — všechno ostatní intelligence-sensitive
+- `low`/`medium` — na Opus 5 překvapivě silné, primární páka na cenu a latenci
+- `max` — jen když korektnost přebíjí cenu; umí přemýšlet zbytečně dlouho
+
+**`max` do `settings.json` nepatří.** Na rozdíl od ostatních úrovní neplatí
+napříč sessions — drží jen tu aktuální, pokud se nenastaví přes
+`CLAUDE_CODE_EFFORT_LEVEL`. Používej ho jednorázově přes `/effort max`.
+
+**`ultracode`** není effort level, ale nastavení Claude Code: pošle modelu
+`xhigh` a navíc zapne orchestraci dynamických workflows. Jen pro aktuální
+session, `settings.json` ani env proměnná ho nepřijmou — zapíná se `/effort
+ultracode` nebo `claude --effort ultracode`.
+
+Šetření probíhá hlavně přes **routing subagentů** (viz *Subagent budget*) a
+**parallel batch mode** (viz níže). Před dispatchem 2+ subagentů invokuj skill
+`token-aware` — vyhodnotí modely a zapíše snapshot pro status panel.
+
+## Komunikace
+- Mluv česky, neformálně
+- Bez zbytečných otázek — když je záměr jasný, rovnou jednej
+- Stručně, výstižně, žádné zbytečné shrnutí na konci
+
+## Práce s kódem
+- Nepřepisuj celé soubory, použij Edit tool
+- Před změnou přečti soubor, ať vidíš aktuální stav
+- Ukazuj jen změněné části kódu
+
+## Ověřování
+
+Kontrola, která měří něco jiného, než co tvrdím, je horší než žádná —
+vyrobí jistotu tam, kde není.
+
+- **Ověřuj výsledek, ne cestu.** Že se změna doručila, neznamená, že se
+  projevila. 2026-09-13: ověřeno, že si televize stáhla Vlastní CSS,
+  a z toho vyvozeno, že bude vypadat jako prohlížeč. Nebude — starý
+  Chromium nepodporovaná pravidla tiše zahodí. Doručení a účinek jsou
+  dvě různá tvrzení a každé chce vlastní důkaz.
+- **Ověřovací dotaz nesmí nacházet sám sebe.** Hledání `@supports not`
+  v souboru dvakrát po sobě uspělo na textu uvnitř mého vlastního
+  vysvětlujícího komentáře. Před počítáním výskytů komentáře odstraň
+  (`re.sub(r'/\*.*?\*/', '', s, flags=re.S)`), nebo hledej v tom, co
+  doopravdy čte stroj, ne v souboru.
+- **Negativní výsledek zapiš jako negativní.** Když se opatření nasadí
+  a nezabere, nesmí v poznámkách zůstat jako „vyřešeno" — příští hledání
+  by to poslalo špatným směrem. 2026-09-13: `vm.swappiness=10` nasazena,
+  změřena, nezabrala; zapsané je to takhle.
+- **Ověřuj v prostředí, které to pak spustí** — cron má jiný PATH, jiného
+  uživatele a žádného ssh-agenta. Zkouška ve vlastním shellu netestuje
+  to, co se pak spustí.
+
+## Commit workflow
+- Commit message česky, krátký popis + případný kontext
+- Nepřidávej Co-Authored-By ani jiné patičky — commituj jen pod uživatelovým jménem
+  (vynuceno configem: `attribution: { commit: "", pr: "" }` v `settings.json`)
+- **Commit message piš přes heredoc, ne přes `-m "..."`.** V dvojitých
+  uvozovkách bash vyhodnotí zpětné uvozovky jako command substitution a
+  do zprávy vloží prázdno nebo chybovou hlášku. Zprávy o kódu jsou přitom
+  zpětných uvozovek plné, protože se jimi značí syntaxe — takže tenhle
+  problém mají přesně ty zprávy, u kterých na přesnosti záleží.
+
+  ```bash
+  git commit -F - <<'KONEC'
+  Nadpis
+
+  Tělo, kde `?.` i `@supports (x)` projdou beze změny.
+  KONEC
+  ```
+
+  Chyceno 2026-09-12: z commitu `66c26ad` zmizelo `?.`, `:has()` a
+  `@supports (backdrop-filter)`, takže věta zněla „pluginy používají
+  (Chromium 80+)". **Zpětně to neopravuj `--amend`**, když je commit
+  pushnutý — force-push kvůli formulaci rozbije ostatní klony.
+
+## Procesy a instance — DŮLEŽITÉ
+
+- **Nikdy nezabíjej procesy brute-force** (`kill`, `taskkill`, `child.kill()` bez graceful shutdown) když mohou být součástí běžící user session.
+  - Důvod: incident 2026-04-14 — `child.kill()` na LevisIDE Electron procesu shodilo uživateli otevřený Chrome. Chromium/Electron sdílejí GPU/utility procesy nebo jiné OS handle.
+- **Před spuštěním aplikace (Electron, dev server, browser) detekuj zda už běží jiná instance.** Pokud ano, zastav a zeptej se — NIKDY nespouštěj druhou ani neshazuj první.
+- **Pro testy/audit:** vždy izolovaná instance — vlastní `--user-data-dir`, vlastní port, vlastní profil. Graceful shutdown přes IPC/`app.quit()`, ne SIGKILL.
+- **Platí zejména pro:** Playwright / Puppeteer / Chromium launches, Electron `_electron.launch`, `spawn` s Electron binary, a jakékoli `taskkill`/`kill -9`.
+
+**Kill-by-name je vynucený hookem**, ne promptem — `hooks/block-destructive.js`
+blokuje `taskkill /IM`, `taskkill /T`, `Stop-Process -Name`,
+`Get-Process | Stop-Process`, `pkill`, `killall`, `kill-port`, `fuser -k`,
+`wmic process delete` a `Invoke-CimMethod Terminate`. Platí i když se tahle
+sekce vykompaktuje z kontextu, a hlavně **i v `bypassPermissions`**, kde se
+`autoMode` vůbec nevyhodnocuje. Testy: `node --test hooks/block-destructive.test.js`.
+
+Rozhoduje **selektor, ne signál**: adresný numerický PID (`taskkill /PID 1234`,
+`Stop-Process -Id 1234`) projde, protože nemůže sáhnout na cizí okno. `/T`
+neprojde ani s PID — zabíjí celý strom potomků.
+
+`autoMode.soft_deny` v `settings.json` ta samá pravidla popisuje taky, ale
+v bypass režimu je mrtvé — leží tam připravené, kdyby se `defaultMode` někdy
+přepnul na `auto`. Nespoléhej na něj, spoléhej na hook.
+
+## Subagent budget — pro plánované dispatche (zejména SDD)
+
+Když pouštíš sérii subagentů (`subagent-driven-development`, `executing-plans`,
+nebo vlastní fan-out), drž se tohoto routingu. SDD/superpowers default je moc
+drahý a často nasadí sonnet na úkoly co zvládne haiku.
+
+- **`implementer-mech`** (haiku) — mechanický task, 1-2 soubory, jasný spec
+- **`implementer-multi`** (sonnet) — multi-file, integrace, cross-boundary refactor
+- **`spec-reviewer`** (haiku) — deterministic spec ↔ code mapping (PASS/FAIL)
+- **`code-reviewer`** (sonnet) — quality, smells, bugs, security (judgment-based)
+- **`dead-code-scanner`** (haiku) — unused exports/imports/funkce
+- **`architect`** (opus) — design decisions, ADR-style output
+- **main coordinator / orchestrator** (= já, hlavní turn) → **opus** (default;
+  fable si uživatel přepíná ručně přes `/model`)
+
+**Aliasy modelů (Claude 5 éra).** Aliasy se samy mapují na nejnovější verze —
+v agent frontmatteru je nech, nepiš full model ID.
+
+| Alias    | Model        | Full ID            | Context | $/1M in-out |
+| -------- | ------------ | ------------------ | ------- | ----------- |
+| `haiku`  | Haiku 4.5    | `claude-haiku-4-5` | 200K    | $1 / $5     |
+| `sonnet` | **Sonnet 5.5** | `claude-sonnet-5-5` | 1M    | $2 / $10    |
+| `opus`   | **Opus 5.5** | `claude-opus-5-5`  | 1M      | $4 / $20    |
+| —        | Opus 5       | `claude-opus-5`    | 1M      | $5 / $25    |
+| `fable`  | Fable 5.1    | `claude-fable-5-1` | 1M      | $10 / $50   |
+
+Alias `opus` od září 2026 míří na **Opus 5.5** (cache read $0,20/1M místo
+$0,50). Pozor na effort: Opus 5.5 má upstream default `medium` a na stejně
+pojmenované úrovni přemýšlí víc než Opus 5 — `high` na 5.5 je dražší než
+`high` na 5. Opus 5 zůstává jako záloha přes plné ID.
+
+Alias `sonnet` míří od 2026-09-28 na **Sonnet 5.5** (cache read $0,20,
+v Claude Code default effort `medium`). Obě 5.5 mají „preserved thinking“:
+přenos konverzace mezi účty uprostřed session se může rozbít — týká se
+přepínání účtů v LevisIDE (`prenos-uctu.ts`).
+
+Fable je nejsilnější veřejně dostupný model — 2,5× cena Opusu 5.5, takže
+jen pro hlavní turn u nejtěžších věcí; subagentům ho nedávej. Alias `fable` míří
+na nejnovější verzi sám, proto v agent frontmatteru piš alias, ne plné ID. Mythos 5
+(`claude-mythos-5`) je stejný model pro Project Glasswing — nemáme přístup.
+
+Fable pro subagenty je tvrdě zablokovaný přes `permissions.deny` →
+`Agent(model:fable)` v `settings.json`. Deny rule se vyhodnocuje před
+classifierem i před promptem, takže tohle pravidlo nejde obejít omylem.
+
+**Fallback:** `settings.json` má `fallbackModel: ["claude-sonnet-5-5"]` — když
+je opus přetížený, session spadne na Sonnet 5.5. Haiku z řetězu vypadl
+2026-09-30: pád z Opusu na Haiku byl tichý propad kvality uprostřed práce,
+radši chyba než to.
+
+Definice: `~/.claude/agents/<name>.md` (frontmatter má model + tools + role prompt).
+
+**Dispatch:** Použij `subagent_type: "<name>"` v Agent tool callu. Model je v
+frontmatteru — explicit `model:` parametr není potřeba, ale override-uje.
+
+**Eskalace:** pokud subagent vrátí `BLOCKED` nebo `NEEDS_CONTEXT`, re-dispatch
+o jednu úroveň výš (haiku → sonnet, sonnet → opus). Opus je strop pro subagenty
+— nikdy ho nestřílej jako default „pro jistotu" a na fable neeskaluj.
+
+**Kdy delegovat — tohle je pokyn, ne nabídka.** Bez téhle věty se dispatch
+nestane sám: harness Agent tool nepoužívá, dokud o to nepožádá uživatel,
+CLAUDE.md nebo skill. Routing výš je ceník; tohle je objednávka.
+
+Deleguj, aniž by ses ptal, když úloha spadne do některé třídy:
+
+| úloha | agent | model |
+|---|---|---|
+| mechanická změna v 1–2 souborech podle jasného zadání | `implementer-mech` | haiku |
+| změna přes 3+ souborů, integrace, cross-boundary refactor | `implementer-multi` | sonnet |
+| review hotové implementace (smells, bugy, bezpečnost) | `code-reviewer` | sonnet |
+| ověření, že implementace sedí na zadání | `spec-reviewer` | haiku |
+| nepoužité exporty a importy po refaktoru | `dead-code-scanner` | haiku |
+| návrhové rozhodnutí, kde si předpoklady odporují | `architect` | opus |
+
+Smysl je, že **hlavní turn zůstane na Opusu a práci odvede levnější model.**
+Není to zadarmo — každý dispatch si kontext staví znovu, takže na drobnost
+je delegace dražší než udělat to sám. Proto platí i blok níž.
+
+**Kdy subagenta NEspouštět.** Opus 5 deleguje ochotněji než 4.8 a každý
+dispatch platí kontext znovu (subagent si ho postaví, zreportuje, já si report
+přečtu). Nedeleguj, když:
+
+- to zvládnu sám pár tool cally — pár readů, hrstka editů, jeden grep
+- jde o review nebo ověření vlastní práce → patří do hlavního loopu, ne
+  do subagenta (od toho je `code-reviewer` až *po* implementaci, ne průběžně)
+- jeden subagent stačí — nedělím jeden malý task mezi víc agentů
+
+Když deleguju, tak delegaci dodržím: nepřepočítávám subagentův výstup a
+nedělám jeho práci znovu. Paralelní dispatch je pro nezávislé tracky
+(viz *Parallel batch mode*, strop 3 tasky/batch), ne pro rozkrájení jedné
+drobnosti.
+
+## Dokumentace projektů → Obsidian
+
+**Vaulty jsou dva a nemíchají se** — pracovní stroj nesmí dostat osobní
+poznámky. O tom, který se použije, rozhoduje umístění projektu na disku:
+
+| Projekt leží           | scope      | vault                   | env override                   |
+| ---------------------- | ---------- | ----------------------- | ------------------------------ |
+| pod `C:\dev\Work\`     | `work`     | `C:\dev\Work\Obsidian`  | `CLAUDE_OBSIDIAN_VAULT_WORK`   |
+| kdekoli jinde          | `personal` | `C:\dev\vault`          | `CLAUDE_OBSIDIAN_VAULT`        |
+
+Kořen pracovních projektů se dá přepsat přes `CLAUDE_WORK_ROOT`. Vault *Domácí
+server* je oddělený a zůstává tematicky sevřený jen na homelab.
+
+**Osobní projekt otevřený na pracovním stroji** (osobní vault není po ruce) se
+nedokumentuje — místo toho vznikne v repu `.claude/doc-pending.md` s kontextem
+projektu. Ten se commitne, doma se pullne a `doc-check` tam nabídne dokumentaci
+sám. Handoff jde přes git, ne přes sdílený disk. Marker vzniká jen jednou;
+po zapsání poznámky ho `doc-state.js --done` smaže.
+
+Hook `doc-check.js` na SessionStart zjistí, jestli otevřený projekt má poznámku
+v `🚀 Projekty/`. Když ne, injektuje do kontextu pokyn **nabídnout dokumentaci**
+— zeptat se jednou větou, ne psát rovnou. Ptá se jen na `source=startup`, mlčí
+u projektů s vlastním Obsidian vaultem a u složek, které nejsou projekt.
+
+Odpověď se **musí zapsat**, jinak se hook zeptá při každém startu znovu:
+
+```bash
+node ~/.claude/scripts/doc-state.js --skip .           # nechce
+node ~/.claude/scripts/doc-state.js --done . "<nota>"  # hotovo (smaže i marker)
+node ~/.claude/scripts/doc-state.js --defer .          # odlož, zapíšu doma
+node ~/.claude/scripts/doc-state.js --status .         # scope, vault, stav
+```
+
+Psaní poznámky řeší skill `obsidian-docs` — zná konvence vaultu (emoji v
+názvech, frontmatter `tags` + `aktualizovano`, callouty, wikilinky, čeština).
+
+## Time calibration
+
+Některé prompty (planning fáze, dotazy na odhad) dostanou auto-injectnutý blok
+„Historical signals" z `cache/duration-stats.json` — agregace skutečných trvání
+agent dispatchů per (repo × subagent_type) za posledních 90 dní.
+
+**Treat injected duration stats as prior evidence. P90 is the realistic upper
+bound. If your gut says „this is simple", check whether the historical P90
+disagrees — it usually does.**
+
+- Sběr: `hooks/log-duration.js` (volaný z `track-agents.js`) → `logs/agent-durations.jsonl`
+- Agregace: `scripts/duration-stats.js` (on-demand + auto rebuild s 30s debounce po každém zápisu)
+- Per-repo postmortem: `/postmortem` → `memory/surprises-<repo>.md` (auto-konzumováno detect-triggers při planning trigger)
+
+Statistiky jsou per-repo. Pokud daný repo nemá ≥3 vzorky, nic se neinjektuje
+(falešná čísla jsou horší než žádná).
+
+## Parallel batch mode (SDD a fan-out) — DEFAULT
+
+**Toto je default chování pro každý plánovaný dispatch s 3+ tasky.** Není
+potřeba čekat na pokyn uživatele — automaticky postav conflict graph a batchuj.
+
+**Subagenti od CC 2.1.195+ běží na pozadí by default.** Hlavní session čeká
+jen na to, co potřebuje — ne na dokončení dispatche. Tím padá původní důvod
+pro tvrdý strop 3 tasků na batch (byl to strop na *blokující* čekání, ne na
+korektnost). Skutečné omezení je konflikt souborů, ne počet.
+
+**Algoritmus (automaticky při invokaci SDD):**
+1. Extract tasks + target files (z plán dokumentu nebo z task description).
+2. Postav conflict graph (hrany mezi tasky sdílející soubor).
+3. Vezmi **všechny vzájemně nekonfliktní tasky** z aktuální vrstvy →
+   dispatch paralelně v jedné odpovědi. Měkký strop ~5; nad to už je režie
+   čtení reportů větší než ušetřený čas a roste riziko, že si tasky vzájemně
+   rozbijí předpoklady.
+4. Per task uvnitř batche: pipeline implementer → spec → quality (sériová).
+5. Mark batch complete, jeď další vrstvu.
+
+**Sériově jen pokud:** ≤2 tasky v plánu, nebo všechny sdílí jeden soubor, nebo
+uživatel explicitně řekne *"jeď po jednom"*.
+
+**Stop conditions:** implementer vrátí `BLOCKED` / `NEEDS_CONTEXT` → ten task
+degraduj na sériový, batch dokonči bez něj. Detail viz
+`subagent-driven-development` skill, sekce *Parallel Batch Mode*.
+
+**Nested dispatch.** Subagent si smí spawnout vlastního subagenta (CC stropuje
+řetěz na 5 úrovní). Nepoužívej to jako default — náš routing je plochý
+záměrně, ať je vidět kdo co platí. Dává to smysl jen když `architect` potřebuje
+rozsáhlý průzkum, který se nevejde do jeho vlastního kontextu.
+
+**Dynamic workflows.** Pro fan-out přes desítky až stovky subagentů existuje
+upstream mechanismus, kde Claude napíše orchestrační skript. To je nadmnožina
+tohohle ručního batchování. Náš conflict-graph postup drž pro plány řádu
+jednotek až desítek tasků; nad to sáhni po workflow.
+
+---
+
+**Pre-bind subagenty:** definice v `~/.claude/agents/*.md` — dispatchuj přes
+`subagent_type` (viz *Subagent budget* výše). 6 rolí: implementer-mech/multi,
+spec-reviewer, code-reviewer, dead-code-scanner, architect.
+
+---
+
+Tech-specific pravidla jsou v samostatných skills (progressive disclosure):
+- **Token-aware** (routing modelů subagentů + snapshot pro status panel + logging) → skill `token-aware`
+- **Time calibration** (historical durations → P50/P90 prior pro odhady) → sekce výše
+- **Electron security** (`contextIsolation`, CSP, IPC) → skill `electron-security`
+- **TypeScript strict** (`any` s komentářem) → skill `typescript-strict`
+- **i18n texty** (nehardcoduj) → skill `i18n-texts`
+- **Design tokens** (žádné hardcoded hodnoty) → skill `design-tokens`
+- **TSC verifikace po změně** → skill `tsc-verification`
+
+---
+
+## Pravidla toho stroje
+
+Co platí jen tady (jiný operační systém, jiné cesty, jiná rizika) leží vedle
+v `CLAUDE.stroj.md`. Ten soubor **není v gitu** — každý stroj má svůj.
+Díky tomu je zbytek tohohle souboru společný a nemusí se větvit.
+
+@CLAUDE.stroj.md
