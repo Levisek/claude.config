@@ -45,7 +45,7 @@ K dispozici v `~/.claude/agents/<name>.md` (model je v frontmatteru, dispatchuj 
 |---|---|---|---|
 | `implementer-mech` | haiku | Read/Edit/Bash | 1-2 file mechanical edit (rename, typo, format, single-fn change) |
 | `implementer-multi` | sonnet | Read/Edit/Bash/Grep/Glob | Multi-file change, integrace, refactor 3+ souborů |
-| `spec-reviewer` | haiku | Read/Grep/Glob | Deterministický spec ↔ code mapping (PASS/FAIL list) |
+| `spec-reviewer` | sonnet | Read/Grep/Glob | Deterministický spec ↔ code mapping (PASS/FAIL list) |
 | `code-reviewer` | sonnet | Read/Grep/Glob | Quality, smells, bugs, security — judgment-based |
 | `dead-code-scanner` | haiku | Read/Grep/Glob | Unused exports/imports — TS/JS, mechanical |
 | `architect` | opus | Read/Grep/Glob/WebFetch | Design decisions, ADR-style output, cross-cutting |

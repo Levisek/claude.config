@@ -100,7 +100,7 @@ přes `subagent_type`):
 | mechanická změna v 1–2 souborech podle jasného zadání | `implementer-mech` | haiku |
 | změna přes 3+ souborů, integrace, refaktor přes hranice | `implementer-multi` | sonnet |
 | review hotové větve (bugy, bezpečnost, smells) | `code-reviewer` | sonnet |
-| ověření, že implementace sedí na spec | `spec-reviewer` | haiku |
+| ověření, že implementace sedí na spec | `spec-reviewer` | sonnet |
 | nepoužité exporty a importy po refaktoru | `dead-code-scanner` | haiku |
 | návrhové rozhodnutí, kde si předpoklady odporují | `architect` | opus |
 

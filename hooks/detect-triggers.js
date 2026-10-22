@@ -77,20 +77,10 @@ process.stdin.on('end', () => {
   const sections = [];
 
   if (tokenMatch) {
-    sections.push(`[auto-trigger: "${tokenMatch}"] User message naznačuje plánovaný dispatch subagentů nebo netriviální plán. Před dispatchem:
-
-1. **Invokuj skill token-aware** (jednou za turn, ne opakovaně) — vyhodnotí strategii a zapíše snapshot pro status panel.
-2. **Pre-bind subagenty** (definice v \`~/.claude/agents/<name>.md\`):
-   - \`implementer-mech\` (haiku) — 1-2 file mechanical change
-   - \`implementer-multi\` (sonnet) — multi-file / integration
-   - \`spec-reviewer\` (haiku) — spec ↔ code check
-   - \`code-reviewer\` (sonnet) — quality, smells, bugs
-   - \`dead-code-scanner\` (haiku) — unused exports/imports
-   - \`architect\` (opus) — design decisions, ADR
-3. **Dispatchuj jménem**: \`subagent_type: "<name>"\` v Agent tool callu. Model je v frontmatteru — explicit \`model:\` parametr není potřeba, ale stále override-uje pokud ho předáš.
-4. Paralelně jen nezávislé tracky (max ~3), review jednou na konci větve (viz CLAUDE.md *SDD — naše úprava*).
-
-Pokud user signál byl false-positive (např. mluví o agentech jako konceptu, ne o dispatchi), ignoruj.`);
+    // Routing tabulka je v CLAUDE.md (*Subagent budget*) — tady jen
+    // připomínka, ne její kopie. Do 2026-10-22 se sem vkládala celá
+    // (~250 tokenů) i s pokynem, že batch mode je default.
+    sections.push(`[auto-trigger: "${tokenMatch}"] Uživatel mluví o dispatchi subagentů. Routing a kdy NEdelegovat: CLAUDE.md *Subagent budget*. Před dispatchem 2+ agentů skill token-aware.`);
   }
 
   if (timeMatch) {

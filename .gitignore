@@ -101,6 +101,7 @@ remote-settings.json
 # Per-machine — kazdy stroj ma svoje, nesmi se sdilet
 # ================================================================
 CLAUDE.stroj.md
+CLAUDE.stroj.pozadi.md
 settings.local.json
 chrome/
 # stav Claude Code pro tenhle stroj (historie projektu, ucet)

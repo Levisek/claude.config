@@ -29,15 +29,11 @@ function runHook(prompt) {
 
 const cases = [
   {
-    name: 'token-aware reminder with 6 agent names',
+    // Od 2026-10-22 jen odkaz na CLAUDE.md, ne kopie routing tabulky.
+    name: 'token-aware reminder points to CLAUDE.md',
     prompt: 'rozdělej to mezi agenty a naplánuj refactor X',
-    mustContain: [
-      'implementer-mech', 'implementer-multi',
-      'spec-reviewer', 'code-reviewer',
-      'dead-code-scanner', 'architect',
-      '~/.claude/agents/',
-    ],
-    mustNotContain: [],
+    mustContain: ['Subagent budget', 'token-aware'],
+    mustNotContain: ['implementer-mech', 'DEFAULT'],
   },
   {
     name: 'tsc skill hint on "spusť tsc"',

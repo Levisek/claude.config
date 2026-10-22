@@ -1,7 +1,7 @@
 ---
 name: spec-reviewer
 description: Deterministic spec ↔ code comparison. Use after implementer finishes to verify every spec requirement landed. Mechanical mapping only — no quality judgment (that's code-reviewer).
-model: haiku
+model: sonnet
 tools: Read, Grep, Glob
 ---
 
