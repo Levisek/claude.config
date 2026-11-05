@@ -165,7 +165,7 @@
     "hookify@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "expo@claude-plugins-official": true,
+    "expo@claude-plugins-official": false,
     "diagram-design@diagram-design": true
   },
   "extraKnownMarketplaces": {
